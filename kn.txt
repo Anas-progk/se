@@ -1,0 +1,29 @@
+curl.exe -LO https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe  //download
+minikube start --driver=docker //start
+minikube kubectl -- get pods -A //all pods
+minikube kubectl -- get nodes //nodes
+minikube dashboard
+minikube start
+kubectl create deployment mynginx --image=nginx  //create deployment
+kubectl set image deployment/mynginx nginx=nginx:latest //if already exists
+kubectl get deployments
+kubectl get pods
+kubectl describe pods
+kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80
+kubectl get services
+kubectl scale deployment mynginx --replicas=4
+kubectl get service mynginx
+kubectl port-forward svc/mynginx 8081:80
+kubectl delete deployment mynginx
+kubectl delete service mynginx
+minikube stop
+
+docker pull jasonrivers/nagios:latest
+docker images
+docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+docker start nagiosdemo
+nagiosadmin
+nagios
+docker stop nagiosdemo
+docker rm nagiosdemo
+docker rmi jasonrivers/nagios:latest //careful
