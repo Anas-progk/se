@@ -1,0 +1,760 @@
+2. First understand what we're building
+Imagine you are developing a web application.
+
+Your application needs three things:
+
+
+
+
+
+
+
+
+
+
+1. Nginx – Web Server
+
+Handles incoming web requests.
+
+
+
+
+
+
+
+
+
+
+
+
+
+2. PostgreSQL – Database
+
+Stores application data.
+
+
+
+
+
+
+
+
+
+
+
+
+
+3. Redis – Cache
+
+Stores frequently accessed data for faster retrieval.
+
+
+
+Normally, you could run these containers individually using docker run.
+
+But imagine running 3, 5, or 10 containers individually.
+
+It becomes difficult to manage.
+
+Docker Compose solves this problem.
+
+You write the configurations in one file called docker-compose.yml, and Docker Compose manages all the services together.
+
+Think of it like this:
+docker-compose.yml
+
+One configuration file
+
+Docker Compose
+Web
+
+Nginx
+
+DB
+
+Postgres
+
+Redis
+
+Cache
+
+
+
+All services managed together
+
+Now let's perform it.
+
+3. Step-by-step practical implementation
+Step 0: Prerequisites
+Before starting, make sure:
+- Docker Desktop is installed.
+- Docker Desktop is running.
+- You have access to PowerShell or VS Code terminal.
+Open PowerShell and execute:
+docker --version
+
+
+This checks whether Docker is installed.
+
+Next:
+docker compose version
+
+
+This checks whether Docker Compose is available.
+
+If both commands display their versions, you're ready.
+Step 1: Create a project folder
+Our first task is to create a folder named compose-lab.
+
+Execute:
+mkdir compose-lab
+
+
+Enter the folder:
+cd compose-lab
+
+
+Create a file named:
+docker-compose.yml
+
+
+You can create it using VS Code:
+code .
+
+
+Then create the file inside VS Code.
+
+Your folder structure should look like this:
+compose-lab
+
+
+docker-compose.yml
+
+
+Step 2: Write docker-compose.yml
+Copy this code into your file:
+
+version: "3.9"
+
+services:
+
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+
+
+Now let's understand every line.
+
+Line 1:
+version: "3.9"
+
+
+Specifies the Compose file format version used in the lab document.
+
+Line 2:
+services:
+
+
+This is where we define the containers that our application requires.
+
+Line 3:
+web:
+
+
+We are creating a service named web.
+
+Line 4:
+image: nginx:latest
+
+
+We are telling Docker to use the Nginx image.
+
+If Docker doesn't have this image locally, it downloads it from Docker Hub.
+
+Line 5:
+ports:
+  - "8080:80"
+
+
+This is extremely important.
+
+The format is:
+HOST PORT : CONTAINER PORT
+
+
+Therefore:
+- 8080 = Port on your computer.
+- 80 = Port inside the Nginx container.
+When you visit localhost:8080, Docker forwards your request to port 80 inside Nginx.
+
+Next, PostgreSQL:
+db:
+  image: postgres:15
+
+
+Creates a database service using PostgreSQL version 15.
+
+Then:
+environment:
+  POSTGRES_USER: demo
+  POSTGRES_PASSWORD: demo
+  POSTGRES_DB: demo_db
+
+
+These are environment variables.
+
+They configure:
+Variable	Purpose
+POSTGRES_USER	Database username
+POSTGRES_PASSWORD	Database password
+POSTGRES_DB	Database name
+
+That's it. We have defined two services.
+Step 3: Start the containers
+Now execute this command from inside the compose-lab folder:
+docker compose up -d
+
+
+Let's break it down.
+- docker compose = Docker Compose tool.
+- up = Create and start the services.
+- -d = Run in detached mode (background).
+Docker will:
+1. Download the required images if necessary.
+2. Create the containers.
+3. Start the Nginx container.
+4. Start the PostgreSQL container.
+Expected result
+
+You should see output indicating that the network and containers have been created and started.
+Step 4: Check running containers
+Execute:
+docker compose ps
+
+
+This displays the containers belonging to your Compose project.
+
+You should see something similar to:
+Service	Image	Status
+web	nginx:latest	Running
+db	postgres:15	Running
+
+Your exact container names may differ.
+Step 5: Open the application
+Open your browser.
+
+Visit:
+Nginx Web Server
+
+http://localhost:8080
+Open this URL in your browser.
+Open Nginx
+You should see:
+
+
+
+
+
+
+
+
+qiita.com
+
+
+Expected output
+Nginx welcome page is displayed, and the PostgreSQL container runs in the background.
+
+Congratulations! You have completed the first part of the experiment.
+
+4. Add Redis – Third container
+Now we move to Task 2 in your lab manual.
+
+Our objective is to add Redis as another service.
+
+Go back to docker-compose.yml.
+
+Modify it:
+
+version: "3.9"
+
+services:
+
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+  redis:
+    image: redis:alpine
+
+
+
+Two things to understand:
+
+1. We added Redis.
+redis:
+  image: redis:alpine
+
+
+This creates a Redis container using the Alpine-based Redis image.
+
+2. We added depends_on.
+depends_on:
+  - redis
+
+
+This tells Docker Compose to start Redis before starting the web service.
+
+Note: depends_on controls startup order, not whether Redis is fully ready to accept connections.
+
+Now execute:
+docker compose up -d
+
+
+Then:
+docker compose ps
+
+
+Expected output
+You should now see three services:
+1. web
+2. db
+3. redis
+We have successfully added a third container.
+
+5. Deploy across different machines
+This is Task 3 in your manual.
+
+Imagine you want to share your application with your friend.
+
+What should you do?
+
+Step 1: Zip your compose-lab folder.
+
+Step 2: Transfer the ZIP file to another computer.
+
+Step 3: Extract the folder.
+
+Step 4: Make sure Docker Compose is installed and running on that computer.
+
+Step 5: Open the terminal inside the extracted folder.
+
+Execute:
+docker compose up -d
+
+
+Docker Compose reads the YAML file and creates the required services on the new machine.
+Expected output
+The same services run on the new machine without manually configuring each container.
+
+Remember: the other machine still needs Docker installed, and the images must be downloadable or available locally.
+
+6. Configure Networking and Persistent Storage
+Important practical task
+This is one of the most important sections of your experiment.
+
+First, understand two concepts.
+
+A. Network
+
+A network allows containers to communicate with each other.
+
+For example:
+- Web container communicates with the database.
+- Web container communicates with Redis.
+B. Volume
+
+A volume stores data outside the container's writable filesystem.
+
+Why do we need it?
+
+Imagine:
+1. You store 100 student records in PostgreSQL.
+2. You delete the database container.
+3. You create a new database container.
+Without persistent storage, your container's data can be lost.
+
+A Docker volume helps preserve the database data even when the container is removed.
+Step 1: Modify docker-compose.yml
+For this task, use the following configuration:
+
+version: "3.9"
+
+services:
+
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+
+
+
+Let's understand the new sections.
+
+1. Networks
+networks:
+  app-net:
+
+
+Creates a custom network named app-net.
+
+Then:
+networks:
+  - app-net
+
+
+We attach both web and database services to this network.
+
+2. Volumes
+volumes:
+  db-data:
+
+
+Creates a named volume called db-data.
+
+Then:
+volumes:
+  - db-data:/var/lib/postgresql/data
+
+
+This connects our Docker volume to PostgreSQL's data directory.
+
+Understand this carefully:
+Part	Meaning
+db-data	Docker volume
+/var/lib/postgresql/data	Database storage directory inside container
+
+Step 2: Start the services
+Execute:
+docker compose up -d
+
+
+Step 3: Insert data into PostgreSQL
+Your manual mentions that this is optional.
+
+To demonstrate persistence, let's actually insert some data.
+
+Execute:
+docker compose exec db psql -U demo -d demo_db
+
+
+This opens the PostgreSQL command-line interface inside the database container.
+
+Now execute these SQL commands:
+CREATE TABLE students (
+    id INT,
+    name VARCHAR(50)
+);
+
+
+Insert a record:
+INSERT INTO students VALUES (1, 'Anas');
+
+
+Display the record:
+SELECT * FROM students;
+
+
+Expected output:
+ id | name
+----+------
+  1 | Anas
+
+
+Exit PostgreSQL:
+\q
+
+
+Step 4: Remove the containers
+Execute:
+docker compose down
+
+
+This stops and removes the Compose containers and its project network.
+
+Important: The named volume remains intact because we did not use -v.
+Step 5: Start the containers again
+Execute:
+docker compose up -d
+
+
+Now open PostgreSQL again:
+docker compose exec db psql -U demo -d demo_db
+
+
+Execute:
+SELECT * FROM students;
+
+
+Expected output
+ id | name
+----+------
+  1 | Anas
+
+
+Your data is still there!
+
+Why?
+
+Because PostgreSQL stored its data in the db-data volume rather than relying only on the container's writable filesystem.
+
+This demonstrates persistent storage.
+
+7. Faster iteration during development – Flask + Docker
+This is the final practical task in your document.
+
+Our objective is to create a simple Flask application and run it using Docker Compose.
+Step 1: Create app.py
+Inside your compose-lab folder, create:
+app.py
+
+
+Add this code:
+from flask import Flaskapp = Flask(__name__)@app.route("/")def home():    return "Hello from Flask + Docker!"if __name__ == "__main__":    app.run(host="0.0.0.0", port=5000)
+
+
+
+What does this code do?
+- Flask(__name__) creates a Flask application.
+- @app.route("/") defines the home URL.
+- home() returns a message.
+- app.run() starts the server on port 5000.
+Why 0.0.0.0?
+
+It allows the Flask server to accept connections from outside the container.
+Step 2: Create Dockerfile
+Create another file:
+Dockerfile
+
+
+Add:
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY app.py /app/
+
+RUN pip install flask
+
+CMD ["python", "app.py"]
+
+
+
+Understand each instruction:
+Instruction	Purpose
+FROM	Selects the base image
+WORKDIR	Sets working directory
+COPY	Copies app.py into the image
+RUN	Installs Flask
+CMD	Executes the Python application
+
+Step 3: Modify docker-compose.yml
+For this stage, replace the previous Nginx web service with the Flask service.
+
+Use:
+
+services:
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+
+
+Notice:
+build: .
+
+
+This tells Docker Compose to build an image using the Dockerfile in the current directory.
+Step 4: Run the application
+Execute:
+docker compose up --build
+
+
+What does --build do?
+
+It builds the Docker image before starting the containers.
+
+Open:
+Flask application
+http://localhost:5000
+Open Flask application
+Expected output:
+Hello from Flask + Docker!
+
+
+Step 5: Modify and rebuild
+Open app.py.
+
+Change:
+return "Hello from Flask + Docker!"
+
+
+
+To:
+return "Hello Docker Compose!"
+
+
+
+Now rebuild:
+docker compose up --build
+
+
+Refresh your browser.
+
+You should see:
+Hello Docker Compose!
+
+
+This demonstrates faster application development through Docker Compose.
+
+8. Important commands to memorise
+These commands are the backbone of your experiment.
+Command	Purpose
+docker --version	Check Docker version
+docker compose version	Check Compose version
+docker compose up -d	Start all services in background
+docker compose ps	List running services
+docker compose down	Stop and remove containers
+docker compose up --build	Build and start services
+docker compose exec db psql -U demo -d demo_db	Access PostgreSQL
+docker compose logs	View service logs
+
+One more important command:
+docker compose down -v
+
+
+This removes the Compose-managed named volumes as well. Don't use it when you want to preserve your database data.
+
+9. How to memorise the entire experiment
+Don't memorise every YAML file as an unrelated block of code.
+
+Memorise the experiment in this order:
+The 7-step memory chain
+1. CREATE
+   
+   Create compose-lab folder and docker-compose.yml.
+2. DEFINE
+   
+   Define Nginx and PostgreSQL under services.
+3. RUN
+   
+   docker compose up -d
+4. CHECK
+   
+   docker compose ps and visit localhost:8080.
+5. EXTEND
+   
+   Add Redis and depends_on.
+6. PERSIST
+   
+   Add networks and volumes, then test database persistence.
+7. REBUILD
+   
+   Create Flask app, Dockerfile and use docker compose up --build.
+
+Remember these five YAML concepts:
+YAML keyword	Remember it as
+services	Containers
+image	Which image to use
+ports	Host-to-container connection
+networks	Container communication
+volumes	Persistent data
+
+
+10. Viva questions you should prepare
+These are important because your examiner may ask questions while you perform the experiment.
+
+Q1. What is Docker Compose?
+
+Docker Compose is a tool used to define and run multi-container Docker applications using a single YAML configuration file.
+
+Q2. What is docker-compose.yml?
+
+It is a YAML file that defines the services, networks and volumes required by an application.
+
+Q3. What is a service?
+
+A service represents a component of an application that is configured to run as a container, such as Nginx or PostgreSQL.
+
+Q4. What is the purpose of -d?
+
+It runs containers in detached mode, meaning they run in the background.
+
+Q5. What is depends_on?
+
+It specifies the startup order and dependencies between services.
+
+Q6. What is a Docker volume?
+
+A volume provides persistent storage so that data can survive container removal and recreation.
+
+Q7. What is a Docker network?
+
+It allows containers to communicate with each other.
+
+Q8. What is port mapping?
+
+It connects a port on the host machine to a port inside a container.
+
+Example:
+ports:
+  - "8080:80"
+
+
+Q9. Difference between docker compose up and docker compose down?
+- up creates and starts services.
+- down stops and removes containers and the project network.
+Q10. What is the difference between image and build?
+- image uses an existing Docker image.
+- build creates an image using a Dockerfile.

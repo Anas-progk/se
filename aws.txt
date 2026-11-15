@@ -1,0 +1,1023 @@
+sudo apt update	Update package lists
+sudo apt upgrade -y	Upgrade packages
+sudo apt install openjdk-17-jdk -y	Install Java
+java -version	Verify Java
+sudo apt install maven -y	Install Maven
+mvn -version	Verify Maven
+oggc zgfn gbsb uimk
+
+
+
+Experiment: Cloud Deployment using AWS (EC2 + Docker)
+We'll perform the experiment from the beginning, exactly in the order given in your lab manual.
+
+I'll explain:
+1. What to click in AWS.
+2. What commands to execute.
+3. What each command does.
+4. How to verify that each step worked.
+5. How to access your application publicly.
+6. Common errors and how to fix them.
+7. Scenario-based viva questions from your manual.
+Our final goal: Deploy a Maven Java web application from GitHub onto an Ubuntu EC2 virtual machine using Docker, then access it through the EC2 public IP.
+Experiment workflow
+1. Create Maven web application
+   
+   Push the project to GitHub.
+2. Create AWS EC2 instance
+   
+   Launch an Ubuntu virtual machine.
+3. Connect to EC2
+   
+   Connect using SSH and your .pem key.
+4. Install required software
+   
+   Install Docker, Git and Nano.
+5. Clone GitHub repository
+   
+   Download your Maven project onto EC2.
+6. Create Dockerfile
+   
+   Configure Tomcat to run your WAR file.
+7. Build Docker image
+   
+   Convert your project into a Docker image.
+8. Run Docker container
+   
+   Start the application.
+9. Access publicly
+   
+   Open the EC2 public IP in your browser.
+
+
+PART 1 – Create Maven Web Java Project and Push to GitHub
+Your manual assumes that you already have a Maven web application in Eclipse.
+Step 1. Create the Maven project
+1. Open Eclipse.
+2. Click File → New → Maven Project.
+3. Select Create a simple project (skip archetype selection), if required.
+4. Enter the following details:
+Field	Value
+Group Id	com.example
+Artifact Id	maven-web-java
+Packaging	war
+Version	1.0-SNAPSHOT
+
+5. Click Finish.
+Step 2. Verify project structure
+Your project should look similar to this:
+maven-web-java/
+│
+├── src/
+│   └── main/
+│       └── webapp/
+│           └── index.jsp
+│
+├── pom.xml
+
+
+The important file is pom.xml. It contains the Maven configuration.
+Step 3. Build the project
+Right-click the project → Run As → Maven build.
+
+Enter:
+clean package
+
+
+Click Run.
+
+If successful, Maven generates a WAR file inside:
+target/
+
+
+Example:
+target/maven-web-java.war
+
+
+Step 4. Push the project to GitHub
+1. Open GitHub.
+2. Create a new repository named maven-web-java.
+3. Open your project directory in terminal.
+4. Execute:
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin YOUR_GITHUB_REPOSITORY_URL
+git push -u origin main
+
+
+Replace YOUR_GITHUB_REPOSITORY_URL with your actual GitHub repository URL.
+Checkpoint 1
+Your Maven project should now be available on GitHub.
+
+Remember: We will clone this repository onto the AWS machine.
+
+PART 2 – Create Ubuntu Virtual Machine in AWS (EC2)
+This is the most important AWS configuration section.
+Step 1. Login to AWS
+1. Open your AWS Academy / Learner Lab account.
+2. Start the Learner Lab if required.
+3. Open AWS Management Console.
+Step 2. Open EC2
+
+
+
+
+
+
+
+
+medium.com
+
+
+1. Search for EC2 in the AWS search bar.
+2. Click EC2.
+3. Open the EC2 dashboard.
+Step 3. Select region
+At the top-right corner, select a region close to you.
+
+For example:
+
+- Asia Pacific (Mumbai) – ap-south-1
+
+Use a region supported by your AWS Academy lab.
+Step 4. Launch an instance
+Click:
+
+EC2 → Instances → Launch instances
+
+Now configure the following stages.
+Stage 1 – Name
+Enter:
+ubuntu
+
+
+This is the name of your virtual machine.
+Stage 2 – Select AMI
+AMI means Amazon Machine Image.
+1. Select Ubuntu.
+2. Choose Ubuntu Server.
+3. Select a free-tier-eligible option if available.
+
+
+
+
+
+
+
+
+dev.to
+
+
+Stage 3 – Architecture
+Select:
+64-bit (x86)
+
+
+Stage 4 – Instance type
+Select:
+t2.micro
+
+
+Your manual specifies:
+- 1 vCPU
+- 1 GB RAM
+If your lab offers another free-tier-eligible micro instance, follow the lab's available option.
+Stage 5 – Create key pair
+A key pair is used to securely connect to your EC2 machine.
+1. Click Create new key pair.
+2. Key pair name:
+aws-key
+
+
+3. Key pair type: RSA.
+4. Private key file format: .pem.
+5. Click Create key pair.
+
+
+
+
+
+
+
+
+dev.to
+
+
+The .pem file will be downloaded.
+
+IMPORTANT:
+
+Create a folder on your laptop:
+AWS
+
+
+Move your downloaded .pem file into this folder.
+
+Example:
+C:\Users\YourName\AWS\aws-key.pem
+
+
+Do not delete this file. Do not share it with anyone.
+Stage 6 – Network settings
+This step is extremely important.
+
+Click Edit under Network settings.
+
+Create a new security group.
+
+A security group acts like a firewall. It controls which connections can reach your EC2 instance.
+
+Your manual specifically says to select:
+- HTTP
+- HTTPS
+
+
+
+
+
+
+
+
+medium.com
+
+
+For our Docker application, we also need port 6060.
+
+Add another inbound rule:
+Type	Port	Source
+SSH	22	My IP
+HTTP	80	0.0.0.0/0
+HTTPS	443	0.0.0.0/0
+Custom TCP	6060	0.0.0.0/0
+
+Why port 6060?
+
+Our Docker command will map:
+6060:8080
+
+
+- 6060 = EC2 machine's external port.
+- 8080 = Tomcat's internal container port.
+Without allowing port 6060 in the security group, you cannot access the application externally through that port.
+
+For a lab demonstration, the custom TCP rule can temporarily use 0.0.0.0/0. Restrict it to your IP when possible.
+Stage 7 – Configure storage
+Select:
+8 GiB
+
+
+Your manual specifies 8 GB.
+
+The root volume is similar to the main C: drive on your Windows laptop. It stores the Ubuntu operating system and installed software.
+Stage 8 – Launch instance
+Click:
+Launch instance
+
+
+Stage 9 – Number of instances
+Ensure:
+Number of instances = 1
+
+
+Wait until the instance is running.
+Checkpoint 2
+You have successfully created an Ubuntu virtual machine on AWS.
+
+PART 3 – Connect to Ubuntu EC2 using SSH
+Now we need to access the Ubuntu machine from your Windows laptop.
+Step 1. Select the instance
+1. Open EC2.
+2. Click Instances.
+3. Select your Ubuntu instance.
+4. Click Connect.
+Step 2. Open SSH client tab
+Select:
+SSH client
+
+
+AWS will show an SSH command similar to:
+ssh -i "aws-key.pem" ubuntu@ec2-XX-XX-XX-XX.ap-south-1.compute.amazonaws.com
+
+
+Copy this command.
+
+Your actual command will contain your EC2 public DNS address.
+Step 3. Open PowerShell
+Open PowerShell on your Windows laptop.
+
+Navigate to the folder containing your key pair.
+
+For example:
+cd C:\Users\YourName\AWS
+
+
+Verify the key exists:
+dir
+
+
+You should see:
+aws-key.pem
+
+
+Step 4. Connect to EC2
+Paste the SSH command copied from AWS.
+
+Example:
+ssh -i "aws-key.pem" ubuntu@YOUR_EC2_PUBLIC_DNS
+
+
+Replace the example with the actual AWS-generated command.
+
+If asked:
+Are you sure you want to continue connecting?
+
+
+Type:
+yes
+
+
+Press Enter.
+
+
+
+
+
+
+
+
+medium.com
+
+
+You should see an Ubuntu terminal.
+
+Example:
+ubuntu@ip-172-31-xx-xx:~$
+
+
+What happened?
+
+You connected from your Windows laptop to a remote Ubuntu machine hosted by AWS.
+
+You are now executing commands on the AWS machine, not your laptop.
+
+PART 4 – Install Required Software on Ubuntu
+We are now inside the EC2 Ubuntu terminal.
+
+Your manual specifies installing four things:
+1. Update Ubuntu.
+2. Install Docker.
+3. Install Git.
+4. Install Nano.
+Execute these commands one by one.
+Step 1. Update Ubuntu
+sudo apt update
+
+
+Meaning: Updates the package information available to Ubuntu.
+
+Wait until the command completes.
+Step 2. Install Docker
+sudo apt-get install docker.io -y
+
+
+Meaning: Installs Docker on the Ubuntu machine.
+
+Check whether Docker is installed:
+docker --version
+
+
+You should see a Docker version.
+
+Start Docker:
+sudo systemctl start docker
+
+
+Enable Docker to start automatically when Ubuntu boots:
+sudo systemctl enable docker
+
+
+Verify:
+sudo systemctl status docker
+
+
+Look for:
+active (running)
+
+
+Press q to exit the status screen.
+Step 3. Install Git
+sudo apt install git -y
+
+
+Git is required to download your project from GitHub.
+
+Verify:
+git --version
+
+
+Step 4. Install Nano
+sudo apt install nano -y
+
+
+Nano is a terminal-based text editor. We will use it to create our Dockerfile.
+Step 5. Install Maven (additional requirement)
+Your manual does not include Maven installation in the main experiment commands. However, if your GitHub repository contains the Maven source code and not an already-built WAR file, you need Maven to generate the WAR file on EC2.
+
+Execute:
+sudo apt install maven -y
+
+
+Verify:
+mvn -version
+
+
+Checkpoint 3
+Check that all four required tools and Maven are installed:
+docker --version
+git --version
+nano --version
+mvn -version
+
+
+
+PART 5 – Clone the Application from GitHub
+Now we download the Maven web application from GitHub to our EC2 machine.
+Step 1. Copy GitHub repository URL
+1. Open GitHub in your browser.
+2. Open your maven-web-java repository.
+3. Click the green Code button.
+4. Select HTTPS.
+5. Copy the repository URL.
+Example:
+https://github.com/username/maven-web-java.git
+
+
+Step 2. Clone the repository
+Go back to your Ubuntu terminal.
+
+Execute:
+git clone https://github.com/username/maven-web-java.git
+
+
+Replace the URL with your actual repository URL.
+
+Meaning: Downloads the complete GitHub repository onto your EC2 machine.
+Step 3. Navigate to the project directory
+cd maven-web-java
+
+
+Check the files:
+ls
+
+
+You should see something similar to:
+pom.xml
+src
+
+
+Your project is now available on EC2.
+Step 4. Build the Maven project
+Since we installed Maven, generate the WAR file.
+
+Execute:
+mvn clean package
+
+
+Wait for Maven to finish.
+
+If successful, the output should contain:
+BUILD SUCCESS
+
+
+Now check the target folder:
+ls target
+
+
+You should find a WAR file.
+
+For example:
+maven-web-java.war
+
+
+What is a WAR file?
+
+WAR stands for Web Application Archive.
+
+It is a packaged Java web application that can be deployed on a web server such as Apache Tomcat.
+Checkpoint 4
+You have cloned the project and generated the WAR file.
+
+PART 6 – Create Dockerfile
+Now we configure Docker to create an image containing our Java web application and Tomcat server.
+Step 1. Create Dockerfile
+Make sure you are inside the project directory:
+pwd
+
+
+Now execute:
+nano Dockerfile
+
+
+Nano editor will open.
+Step 2. Write the Dockerfile
+Enter the following instructions:
+
+# Use Tomcat with Java 11 as the base image
+FROM tomcat:9-jdk11
+
+# Copy the generated WAR file to Tomcat webapps
+COPY target/*.war /usr/local/tomcat/webapps/
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Start Tomcat server
+CMD ["catalina.sh", "run"]
+
+
+
+Let's understand each line.
+Instruction	Meaning
+FROM	Specifies the base image
+COPY	Copies the WAR file into Tomcat
+EXPOSE	Documents the port used by Tomcat
+CMD	Starts the Tomcat server
+
+Important difference from the screenshot in your manual:
+
+The manual's Dockerfile screenshot uses:
+COPY ./*.war /usr/local/tomcat/webapps/
+
+
+That works if the WAR file is in the project root.
+
+Our Maven-generated WAR file is inside target/, so we use:
+COPY target/*.war /usr/local/tomcat/webapps/
+
+
+This prevents a common Docker build error.
+Step 3. Save Dockerfile
+In Nano:
+1. Press CTRL + O to save.
+2. Press Enter to confirm the filename.
+3. Press CTRL + X to exit.
+Step 4. Verify Dockerfile
+Execute:
+cat Dockerfile
+
+
+You should see the instructions you entered.
+
+Your project structure should now look like:
+maven-web-java/
+│
+├── src/
+├── target/
+│   └── maven-web-java.war
+│
+├── pom.xml
+└── Dockerfile
+
+
+Checkpoint 5
+Dockerfile is successfully created.
+
+PART 7 – Build Docker Image
+Now we convert our application into a Docker image.
+
+Remember the difference:
+- Dockerfile = Instructions.
+- Docker image = Packaged application.
+- Docker container = Running instance of the image.
+Step 1. Build the image
+Execute this command from the project directory:
+sudo docker build -t maven-web-app .
+
+
+Understand the command:
+Part	Meaning
+docker build	Builds a Docker image
+-t	Assigns a name/tag
+maven-web-app	Image name
+.	Current directory (build context)
+
+
+
+
+
+
+
+
+
+devopscube.com
+
+
+Wait for the process to complete.
+
+If successful, Docker creates your image.
+Step 2. Check Docker images
+Execute:
+sudo docker images
+
+
+Example output:
+REPOSITORY       TAG       IMAGE ID
+maven-web-app    latest    xxxxxxxxx
+tomcat           9-jdk11   xxxxxxxxx
+
+
+Your image should appear in the list.
+
+Why is the Tomcat image also present?
+
+Because our Dockerfile uses:
+FROM tomcat:9-jdk11
+
+
+Docker downloads the base image if it is not already available.
+Checkpoint 6
+Your Docker image has been created successfully.
+
+PART 8 – Run Docker Container
+Now we run the image to start our web application.
+Step 1. Run the Docker image
+Execute:
+sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+
+
+Understand every part:
+Command	Meaning
+docker run	Creates and starts a container
+-d	Runs in background
+--name app-demo	Gives the container a name
+-p 6060:8080	Maps host port 6060 to container port 8080
+maven-web-app	Name of Docker image
+
+Understand port mapping
+Port Mapping
+Your browser
+6060
+EC2 public IP port
+
+Docker port mapping
+6060 → 8080
+
+Tomcat inside container
+8080
+Application server port
+
+
+This means:
+
+When someone accesses port 6060 of your EC2 machine, Docker forwards the request to port 8080 inside the container.
+Step 2. Verify running container
+Execute:
+sudo docker ps
+
+
+You should see something similar to:
+CONTAINER ID   IMAGE          COMMAND
+xxxxxxxx       maven-web-app  catalina.sh run
+
+
+Also check the port mapping.
+
+You should find:
+0.0.0.0:6060->8080/tcp
+
+
+Step 3. Check container logs
+Execute:
+sudo docker logs app-demo
+
+
+Look for Tomcat startup messages.
+
+A successful startup generally shows:
+Server startup in ... milliseconds
+
+
+If the container is not running, inspect its logs:
+sudo docker ps -a
+
+
+Checkpoint 7
+Your Docker container should now be running.
+
+PART 9 – Access the Application Publicly
+This is the final objective of the experiment.
+
+We want to access our application from a browser using the EC2 public IP.
+Step 1. Get EC2 public IP
+1. Open AWS Management Console.
+2. Go to EC2.
+3. Click Instances.
+4. Select your Ubuntu instance.
+5. Find Public IPv4 address.
+Example:
+13.234.XX.XX
+
+
+Use your actual public IP.
+Step 2. Verify security group inbound rules
+Go to:
+EC2 → Instances → Select instance
+→ Security → Security groups
+→ Inbound rules → Edit inbound rules
+
+
+Ensure this rule exists:
+Type	Port	Source
+Custom TCP	6060	0.0.0.0/0
+
+If it is missing, add it and save the rules.
+Step 3. Open the application
+Open Chrome.
+
+Enter:
+http://YOUR_PUBLIC_IP:6060/maven-web-java/
+
+
+Example:
+http://13.234.XX.XX:6060/maven-web-java/
+
+
+The context path depends on the WAR filename. If your WAR is named ROOT.war, use / instead.
+
+
+
+
+
+
+
+
+docs.geocat.net
+
+
+Experiment completed
+Your Maven web application is now deployed on AWS EC2 using Docker and accessible through its public IP.
+
+PART 10 – Troubleshooting Common Errors
+These are the problems you may face during the practical examination.
+Problem 1: Docker permission denied
+Error:
+permission denied while trying to connect to Docker daemon
+
+
+Solution:
+
+Use sudo before Docker commands.
+
+Example:
+sudo docker images
+
+
+Problem 2: Docker container name already exists
+Error:
+Conflict. The container name "/app-demo" is already in use
+
+
+Solution:
+
+Stop and remove the existing container:
+sudo docker stop app-demo
+
+
+sudo docker rm app-demo
+
+
+Now run it again:
+sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+
+
+Problem 3: Application is not opening
+Check these things in order:
+
+1. Is the container running?
+sudo docker ps
+
+
+2. Is Tomcat running inside the container?
+sudo docker logs app-demo
+
+
+3. Is port mapping correct?
+sudo docker ps
+
+
+Check for:
+6060->8080
+
+
+4. Is port 6060 allowed in AWS security group?
+
+Check inbound rules.
+
+5. Are you using the correct public IP and application path?
+http://PUBLIC-IP:6060/maven-web-java/
+
+
+Problem 4: Docker build fails – no WAR file found
+Error:
+COPY failed: no source files were specified
+
+
+Solution:
+
+First check:
+ls target
+
+
+If there is no WAR file, execute:
+mvn clean package
+
+
+Then build again:
+sudo docker build -t maven-web-app .
+
+
+Problem 5: Docker container exits immediately
+Check:
+sudo docker ps -a
+
+
+Then:
+sudo docker logs app-demo
+
+
+The logs will help identify the problem, such as an invalid Dockerfile, missing WAR file or Tomcat startup failure.
+
+PART 11 – Scenario-Based Questions and Answers
+Your manual contains 10 scenario-based questions on pages 4 and 5. These are important for your practical examination.
+
+I'll give you simple answers that you can remember and write in the exam.
+Q1. You have an index.html file on your laptop and launched an EC2 instance with Amazon Linux 2. The instance is running, but the public IP doesn't load the page. How will you host index.html?
+Answer:
+
+Step 1: Connect to EC2 using SSH.
+
+Step 2: Install Apache HTTP server.
+sudo yum install httpd -y
+
+
+Step 3: Start Apache.
+sudo systemctl start httpd
+
+
+Step 4: Enable Apache.
+sudo systemctl enable httpd
+
+
+Step 5: Copy index.html into:
+/var/www/html/
+
+
+For example, after uploading the file:
+sudo cp index.html /var/www/html/
+
+
+Step 6: Allow HTTP port 80 in the EC2 security group.
+
+Step 7: Open:
+http://PUBLIC-IP
+
+
+Q2. You deployed index.html to /var/www/html/, but the webpage is not loading. What two possible issues would you check?
+Answer:
+
+1. Check whether the Apache service is running.
+sudo systemctl status httpd
+
+
+2. Check whether HTTP port 80 is allowed in the EC2 security group's inbound rules.
+
+Also verify that the file exists and has appropriate permissions.
+Q3. Apache stops after an instance reboot. What command ensures it automatically starts on boot?
+Answer:
+sudo systemctl enable httpd
+
+
+This enables Apache to start automatically whenever the EC2 instance boots.
+Q4. You are deploying a Maven web application, but Maven is not installed on EC2. How will you install it?
+Answer:
+
+For Ubuntu:
+sudo apt update
+sudo apt install maven -y
+
+
+Verify:
+mvn -version
+
+
+For Amazon Linux 2, you can use:
+sudo yum install maven -y
+
+
+Q5. You built a Maven project and generated a WAR file inside target/. Where will you place the WAR file for Tomcat deployment and why?
+Answer:
+
+Place the WAR file inside:
+/usr/local/tomcat/webapps/
+
+
+Tomcat automatically deploys WAR files placed inside its webapps directory.
+Q6. Your Maven web application is deployed to Tomcat, but the browser displays 404 error. What will you check?
+Answer:
+1. Check whether Tomcat is running.
+2. Check whether the WAR file is deployed correctly.
+3. Check the application context path.
+4. Check the URL entered in the browser.
+5. Check Tomcat logs for deployment errors.
+Example:
+
+If the WAR file is:
+maven-web-java.war
+
+
+Access:
+http://PUBLIC-IP:8080/maven-web-java/
+
+
+Q7. You can access your application using curl localhost:8080 on EC2 but cannot access it from your browser. What AWS setting is missing?
+Answer:
+
+The EC2 security group's inbound rule is missing or misconfigured.
+
+Allow the required application port, such as 8080.
+
+For our experiment, that port is 6060 externally.
+Q8. After stopping and restarting EC2, the public IP changes. Which AWS feature avoids this issue?
+Answer:
+
+Elastic IP.
+
+Elastic IP provides a static public IPv4 address that can be associated with an EC2 instance.
+Q9. You want to automate deployment commands whenever an EC2 instance is launched. Which EC2 feature can be used?
+Answer:
+
+EC2 User Data.
+
+It allows us to execute scripts automatically during instance initialization.
+Q10. Your Maven application needs external dependencies, but EC2 has no internet. What AWS service or change can allow the instance to download dependencies securely?
+Answer:
+
+Configure appropriate internet connectivity.
+- For a public subnet, use an Internet Gateway with a suitable route.
+- For a private subnet, use a NAT Gateway for outbound internet access.
+Also ensure the security group and network ACL allow the required traffic.
+
+PART 12 – Important Commands to Memorize
+These are the commands you should remember in the examination.
+Purpose	Command
+Update Ubuntu	sudo apt update
+Install Docker	sudo apt-get install docker.io -y
+Install Git	sudo apt install git -y
+Install Nano	sudo apt install nano -y
+Install Maven	sudo apt install maven -y
+Check Docker	docker --version
+Clone GitHub	git clone REPOSITORY_URL
+Enter project	cd maven-web-java
+Build Maven project	mvn clean package
+Create Dockerfile	nano Dockerfile
+Build Docker image	sudo docker build -t maven-web-app .
+List images	sudo docker images
+Run container	sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+List containers	sudo docker ps
+View logs	sudo docker logs app-demo
+Stop container	sudo docker stop app-demo
+Remove container	sudo docker rm app-demo
+
+
+PART 13 – Memorize the Entire Experiment
+This is the sequence I want you to remember. If you remember these 9 stages, you can reconstruct the entire practical.
+AWS Cloud Deployment – Revision Sheet
+1. Create Maven project
+   
+   Create Maven web Java project in Eclipse and push it to GitHub.
+2. Launch EC2
+   
+   Ubuntu → t2.micro → Create .pem key → Security group → HTTP/HTTPS → 8 GB → Launch.
+3. Connect using SSH
+   
+   Navigate to AWS folder and execute the SSH command copied from AWS.
+4. Install software
+   
+   Update Ubuntu → Docker → Git → Nano → Maven if needed.
+5. Clone project
+   
+   git clone → cd maven-web-java → mvn clean package.
+6. Create Dockerfile
+   
+   nano Dockerfile → FROM → COPY → EXPOSE → CMD.
+7. Build image
+   
+   sudo docker build -t maven-web-app .
+8. Run container
+   
+   sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+9. Access publicly
+   
+   http://PUBLIC-IP:6060/maven-web-java/

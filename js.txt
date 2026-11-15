@@ -1,0 +1,542 @@
+Start Jenkins
+1. Open your browser.
+2. Visit:
+http://localhost:8080
+3. Log in using your Jenkins credentials.
+4. You should reach the Jenkins Dashboard.
+
+
+
+
+
+
+
+
+support.testrail.com
+
+
+Step 2. Verify Maven configuration
+This is important because our pipeline uses Maven.
+1. Click Manage Jenkins.
+2. Open Tools (or Global Tool Configuration in older Jenkins versions).
+3. Find the Maven installations section.
+4. Check whether Maven is configured.
+Configure it as follows if it isn't already:
+Field	Value
+Name	MAVEN-HOME
+Install automatically	Optional
+MAVEN_HOME	Your Maven installation directory, if configuring manually
+
+5. Click Save.
+
+
+
+
+
+
+
+
+tpointtech.com
+
+
+Important: The name MAVEN-HOME must match the name used in your pipeline script. It is not necessarily the same as your Windows environment variable.
+Step 3. Verify Git
+1. Open Manage Jenkins → Tools.
+2. Find Git installations, if available in your Jenkins version.
+3. Make sure Git is installed on your Windows machine and accessible to the Jenkins service.
+4. You can verify using Command Prompt:
+git --version
+
+
+You should see a Git version.
+
+Also verify Maven:
+mvn -version
+
+
+You should see Maven version information.
+PART 3 – Create a new Jenkins Pipeline job
+Now we create the actual experiment.
+Step 4. Create a new item
+1. Go to the Jenkins Dashboard.
+2. Click New Item.
+3. Enter the name:
+   
+   Week9_Pipeline
+4. Select Pipeline.
+5. Click OK.
+
+
+
+
+
+
+
+
+dev.to
+
+
+You will now reach the job configuration page.
+Step 5. General configuration
+Find the General section.
+
+1. Enter the description:
+
+Pipeline creation using Jenkins script with Maven build stages, GitHub integration and build triggers.
+
+2. Leave the other settings at their defaults unless your lab requires otherwise.
+Step 6. Configure Build Triggers
+Scroll down to the Build Triggers section.
+
+Your manual says that you can provide build triggers of your choice.
+
+We'll configure two commonly used triggers and understand when to use them.
+
+
+
+
+
+
+
+
+free-it-tutorials.com
+
+
+Option A – Build periodically
+
+This schedules Jenkins to execute the pipeline at a particular time.
+
+For example, to run every evening at 6 PM:
+0 18 * * *
+
+
+Explanation:
+Value	Meaning
+0	Minute
+18	Hour (6 PM)
+*	Every day of month
+*	Every month
+*	Every day of week
+
+Option B – Poll SCM
+
+This makes Jenkins periodically check GitHub for new commits.
+
+Example:
+H/5 * * * *
+
+
+This checks approximately every five minutes.
+
+When Jenkins detects changes, it triggers a build.
+
+Option C – GitHub hook trigger
+
+Select:
+
+GitHub hook trigger for GITScm polling
+
+This is used with a GitHub webhook to trigger a build when a repository receives a push.
+
+Note that simply selecting this checkbox is not enough. You must also configure a webhook in GitHub pointing to your Jenkins server.
+
+For our practical, I recommend:
+- Select Poll SCM.
+- Enter H/5 * * * *.
+This is easier to demonstrate without exposing your local Jenkins server to the internet.
+PART 4 – Configure the Pipeline Script
+Step 7. Find the Pipeline section
+Scroll to the bottom of the configuration page.
+
+You will find the Pipeline section.
+
+Configure it as follows:
+Field	Value
+Definition	Pipeline script
+Script	Our Jenkins pipeline code
+
+Make sure you select Pipeline script, not Pipeline script from SCM, because that is what your lab manual specifies.
+
+
+
+
+
+
+
+
+jenkins.io
+
+
+Step 8. Enter the pipeline code
+Your lab manual provides the following structure. We will use a corrected version that is suitable for Windows and avoids repeatedly cloning into an existing directory.
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'MAVEN-HOME'
+    }
+
+    stages {
+
+        stage('git repo & clean') {
+            steps {
+                bat 'git clone https://github.com/kabrakanak26-pixel/Week4-Maven-Lab.git mavenjava'
+                bat 'mvn clean -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('install') {
+            steps {
+                bat 'mvn install -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('test') {
+            steps {
+                bat 'mvn test -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('package') {
+            steps {
+                bat 'mvn package -f mavenjava/pom.xml'
+            }
+        }
+    }
+}
+
+
+
+A note about the repository: This uses the Week4-Maven-Lab GitHub repository from your earlier Jenkins practical. The script assumes that the repository contains a pom.xml at its root. If your repository has a different structure, the Maven POM path must be adjusted.
+
+Also, the clone command creates a fresh mavenjava directory. Jenkins normally uses the same workspace between builds, so we will address cleaning that directory in the troubleshooting section.
+Step 9. Understand every part of the script
+Let's understand the code because your professor may ask you to explain it.
+1. Pipeline declaration
+pipeline {
+
+
+This declares the beginning of a Jenkins Declarative Pipeline.
+2. Agent
+agent any
+
+
+This tells Jenkins to execute the pipeline on any available agent.
+
+An agent is the machine or node that executes the pipeline.
+3. Tools
+tools {
+    maven 'MAVEN-HOME'
+}
+
+
+This tells Jenkins to use the Maven installation registered under the name MAVEN-HOME.
+4. Stages
+stages {
+
+
+This contains all the stages of our pipeline.
+5. Git repository and clean
+stage('git repo & clean') {
+    steps {
+        bat 'git clone REPOSITORY_URL'
+        bat 'mvn clean -f mavenjava/pom.xml'
+    }
+}
+
+
+- git clone downloads the source code.
+- mvn clean removes previous build output, typically the target directory.
+- bat executes Windows Command Prompt commands.
+6. Install
+stage('install') {
+    steps {
+        bat 'mvn install -f mavenjava/pom.xml'
+    }
+}
+
+
+This executes the Maven install lifecycle.
+
+It compiles the source, runs tests and packages the project as required by the Maven lifecycle, then installs the artifact in the local Maven repository if successful.
+7. Test
+stage('test') {
+    steps {
+        bat 'mvn test -f mavenjava/pom.xml'
+    }
+}
+
+
+This executes the test cases defined in the Maven project.
+
+If tests fail, the pipeline normally stops.
+8. Package
+stage('package') {
+    steps {
+        bat 'mvn package -f mavenjava/pom.xml'
+    }
+}
+
+
+This generates the final application artifact.
+
+Depending on the project's packaging type, it generates:
+- .jar – Java application.
+- .war – Java web application.
+9. Closing braces
+    }
+}
+
+
+These close the stages and pipeline blocks.
+
+One important technical detail: mvn install already performs earlier lifecycle phases, including test and package. Therefore, the separate test and package stages execute those phases again. This is how your lab manual is structured, so we'll retain it for the experiment.
+Step 10. Make the script work for repeated builds
+There is one issue you should understand before running it.
+
+Suppose your first build creates:
+workspace/
+    mavenjava/
+
+
+When you run the second build, Git tries to clone into the same folder. It may fail because the directory already exists.
+
+To prevent this, use Jenkins' deleteDir() command before cloning.
+
+Replace the previous script with this final version:
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'MAVEN-HOME'
+    }
+
+    stages {
+
+        stage('git repo & clean') {
+            steps {
+                deleteDir()
+
+                bat 'git clone https://github.com/kabrakanak26-pixel/Week4-Maven-Lab.git mavenjava'
+
+                bat 'mvn clean -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('install') {
+            steps {
+                bat 'mvn install -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('test') {
+            steps {
+                bat 'mvn test -f mavenjava/pom.xml'
+            }
+        }
+
+        stage('package') {
+            steps {
+                bat 'mvn package -f mavenjava/pom.xml'
+            }
+        }
+    }
+}
+
+
+
+Here is the difference:
+Command	Purpose
+deleteDir()	Deletes the existing Jenkins workspace contents.
+git clone	Downloads a fresh copy of the repository.
+mvn clean	Cleans the Maven project's previous build output.
+
+deleteDir() is a Jenkins Pipeline step, whereas mvn clean is a Maven command. They are not the same thing.
+
+Before running: Confirm that your repository is accessible and contains pom.xml at its root. If the project is inside a subfolder, adjust the POM path accordingly.
+Step 11. Save the pipeline
+1. Scroll to the bottom.
+2. Click Apply.
+3. Click Save.
+Your Jenkins Pipeline job has now been created.
+PART 5 – Execute the experiment
+Step 12. Run the pipeline
+1. Open the Week9_Pipeline job.
+2. On the left side, click Build Now.
+3. Jenkins will start executing the pipeline.
+
+
+
+
+
+
+
+
+opensource.com
+
+
+Step 13. Observe the stages
+After starting the build:
+1. Open the build number (for example, #1).
+2. Open Console Output.
+3. Observe the commands being executed.
+You should see:
+- Git cloning the repository.
+- Maven clean execution.
+- Maven install execution.
+- Maven test execution.
+- Maven package execution.
+
+
+
+
+
+
+
+
+jenkins.io
+
+
+Step 14. Verify the result
+If all stages execute successfully, Jenkins should display:
+Finished: SUCCESS
+You can also check the pipeline stage view.
+
+
+
+
+
+
+
+
+rplgurjar.medium.com
+
+
+Your expected stage sequence:
+Stage	Expected status
+git repo & clean	Success
+install	Success
+test	Success
+package	Success
+
+Step 15. Verify generated files
+Go to:
+
+Week9_Pipeline → Workspace → mavenjava → target
+
+You should find the generated build output.
+
+Depending on your Maven project, this could contain:
+target/
+    classes/
+    test-classes/
+    surefire-reports/
+    your-project.jar
+
+
+Or a .war file if the Maven project uses WAR packaging.
+
+Remember, the artifact extension depends on the packaging value in pom.xml.
+
+For example:
+<packaging>jar</packaging>
+
+
+generates a JAR, whereas:
+<packaging>war</packaging>
+
+
+generates a WAR.
+
+PART 6 – Demonstrate Build Triggers
+Your experiment specifically mentions working on build triggers for the last Jenkins pipeline.
+
+Let's understand how to demonstrate them.
+A. Build periodically – Automatic scheduled execution
+Suppose your professor asks:
+
+"Execute the Jenkins pipeline every evening at 6 PM."
+
+Follow these steps:
+1. Open Week9_Pipeline.
+2. Click Configure.
+3. Scroll to Build Triggers.
+4. Select Build periodically.
+5. Enter:
+0 18 * * *
+
+
+6. Click Apply and Save.
+
+
+
+
+
+
+
+
+devopspilot.com
+
+
+Now Jenkins will schedule the pipeline daily at 6 PM, according to the Jenkins server's timezone.
+B. Poll SCM – Check GitHub for changes
+Suppose you want Jenkins to check the GitHub repository every five minutes.
+1. Open Configure.
+2. Scroll to Build Triggers.
+3. Select Poll SCM.
+4. Enter:
+H/5 * * * *
+
+
+5. Save.
+
+Now Jenkins periodically checks the repository for changes.
+
+If it detects a new commit, it starts a build.
+
+
+
+
+
+
+
+
+cocktailmake.github.io
+
+
+C. GitHub Webhook – Trigger on a push
+This is different from Poll SCM.
+
+A webhook sends a notification from GitHub to Jenkins whenever an event such as a push occurs.
+
+Steps:
+1. Open your Jenkins job.
+2. Click Configure.
+3. Under Build Triggers, select GitHub hook trigger for GITScm polling.
+4. Save the job.
+5. Open your GitHub repository.
+6. Go to Settings → Webhooks.
+7. Click Add webhook.
+8. Enter your publicly reachable Jenkins webhook URL:
+http://YOUR_PUBLIC_JENKINS_URL/github-webhook/
+
+
+9. Select application/json.
+10. Select the push event.
+11. Click Add webhook.
+
+
+
+
+
+
+
+
+medium.com
+
+
+Important: Your local address localhost:8080 is not accessible to GitHub's servers. A GitHub webhook requires a publicly reachable Jenkins endpoint or an appropriate secure tunnel. Don't expose Jenkins directly without securing it.
+
+For your local college practical, Poll SCM is the simpler option.

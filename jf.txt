@@ -1,0 +1,638 @@
+Prepare Jenkins, Maven and Tomcat
+Before creating jobs, check that all required components are ready.
+Step 1: Open Jenkins
+1. Start your Jenkins service.
+2. Open Chrome.
+3. Enter:
+http://localhost:8090
+4. Log in with your Jenkins credentials.
+5. You should see the Jenkins dashboard.
+
+
+
+
+
+
+
+
+support.testrail.com
+
+
+If your Jenkins is running on a different port, use that port instead.
+Step 2: Verify Maven configuration
+Your previous Jenkins configuration used the Maven tool name MAVEN_HOME.
+1. On the dashboard, click Manage Jenkins.
+2. Click Tools or Global Tool Configuration, depending on your Jenkins version.
+3. Find the JDK installations section.
+4. Check that a JDK is configured.
+5. Find the Maven installations section.
+6. Check that a Maven installation exists with the exact name:
+MAVEN_HOME
+7. If it is missing:
+   - Click Add Maven.
+   - Name: MAVEN_HOME
+   - Enable automatic installation, or enter your local Maven installation path.
+8. Click Save.
+
+
+
+
+
+
+
+
+tpointtech.com
+
+
+Important: The Maven version name you select inside your jobs must match MAVEN_HOME exactly.
+Step 3: Install the required Jenkins plugins
+You need these plugins for the experiment:
+Plugin	Purpose
+Git	Connect Jenkins to GitHub
+Maven Integration	Provides Invoke top-level Maven targets
+Copy Artifact	Copies artifacts between jobs
+Build Pipeline	Creates pipeline views
+Deploy to Container	Deploys WAR files to Tomcat
+
+To install:
+1. Go to Manage Jenkins.
+2. Open Plugins.
+3. Select Available plugins.
+4. Search for each plugin by name.
+5. Select the checkbox beside the plugin.
+6. Click Install (or Install without restart).
+7. Wait for installation to complete.
+8. Restart Jenkins if the plugin requires it.
+
+
+
+
+
+
+
+
+hackr.io
+
+
+If a plugin is already installed, do not install it again.
+Step 4: Check Tomcat
+This is necessary only for the Maven Web deployment pipeline.
+
+Your previous setup used:
+- Tomcat: 9.x
+- Tomcat URL: http://localhost:8085/
+- Username: admin
+- Password: 1234
+- Required roles: manager-script and manager-gui
+First, start the Tomcat service.
+
+Then open:
+
+http://localhost:8085/
+
+You should see the Tomcat homepage.
+
+
+
+
+
+
+
+
+cloud.tencent.cn
+
+
+Check the Manager application:
+
+Open:
+
+http://localhost:8085/manager/html
+
+Log in using your Tomcat credentials.
+
+If the Manager page opens, Tomcat is running and accepting your login.
+
+If you get an error:
+- Connection refused: Tomcat is not running or the port is incorrect.
+- 401 Unauthorized: Check your Tomcat username, password and roles.
+- 403 Forbidden: Check the Manager application's access restrictions.
+Do not continue to deployment until Tomcat is running.
+
+Part A – Maven Java Automation
+We will create two jobs:
+1. MavenJava_Build
+2. MavenJava_Test
+3. Create MavenJava_Build
+This job downloads the Java project from GitHub and builds it using Maven.
+Step 1: Create a new job
+1. Open the Jenkins dashboard.
+2. Click New Item on the left side.
+3. Enter the name:
+MavenJava_Build
+4. Select Freestyle project.
+5. Click OK.
+
+
+
+
+
+
+
+
+aahil13.hashnode.dev
+
+
+Step 2: Enter the description
+Inside the configuration page:
+1. Find the Description box.
+2. Enter:
+Java Build demo
+Step 3: Configure Source Code Management
+1. Scroll to Source Code Management.
+2. Select Git.
+3. In Repository URL, paste your teacher-provided Maven Java GitHub repository URL.
+4. Leave Credentials as none if the repository is public.
+5. Under Branches to build, enter the branch specified by the repository.
+The experiment sheet mentions:
+
+*/Main or */master
+
+Use the branch that actually exists in your GitHub repository. Branch names are case-sensitive.
+
+
+
+
+
+
+
+
+medium.com
+
+
+Important: The document uses a placeholder [GitMavenJava repo URL]. It does not provide the actual URL, so obtain that URL from your lab instructor or lab material. Do not paste the placeholder itself.
+Step 4: Configure the first Maven build step – clean
+1. Scroll down to Build Steps.
+2. Click Add build step.
+3. Select Invoke top-level Maven targets.
+4. Configure:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	clean
+
+What does clean do?
+
+It removes previously generated build files, usually from the target folder.
+
+For example:
+Before clean:
+
+Project/
+  src/
+  target/
+    old-build-files/
+
+After clean:
+
+Project/
+  src/
+
+
+This prevents old build output from interfering with the new build.
+Step 5: Configure the second Maven build step – install
+1. Click Add build step again.
+2. Select Invoke top-level Maven targets.
+3. Configure:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	install
+
+What does install do?
+
+It:
+- Compiles the Java source code.
+- Runs the tests configured in the Maven project.
+- Packages the application.
+- Installs the generated artifact into the local Maven repository if the build succeeds.
+Your Build Steps should now look like this:
+Build Steps
+1. Invoke top-level Maven targets
+
+Maven Version: MAVEN_HOME
+
+Goals: clean
+
+
+2. Invoke top-level Maven targets
+
+Maven Version: MAVEN_HOME
+
+Goals: install
+
+
+Step 6: Configure Archive the artifacts
+1. Scroll down to Post-build Actions.
+2. Click Add post-build action.
+3. Select Archive the artifacts.
+4. In the Files to archive field, enter:
+**/*
+
+This tells Jenkins to archive files from the workspace.
+Step 7: Configure Build other projects
+1. Click Add post-build action again.
+2. Select Build other projects.
+3. In Projects to build, enter:
+MavenJava_Test
+
+4. Select the trigger condition:
+
+Only if build is stable
+
+This means Jenkins will automatically trigger the testing job only if the build job succeeds.
+Step 8: Save
+Click Apply, then Save.
+MavenJava_Build created
+
+4. Create MavenJava_Test
+This job receives the artifacts generated by MavenJava_Build and executes the Maven test goal.
+Step 1: Create the job
+1. Go to the Jenkins dashboard.
+2. Click New Item.
+3. Enter:
+MavenJava_Test
+4. Select Freestyle project.
+5. Click OK.
+Step 2: Add description
+Enter:
+
+Test demo
+Step 3: Configure Build Environment
+1. Scroll down to Build Environment.
+2. Find:
+Delete the workspace before build starts
+
+3. Tick the checkbox.
+
+This ensures that the job starts with a clean workspace.
+Step 4: Copy artifacts from MavenJava_Build
+1. Scroll down to Build Steps.
+2. Click Add build step.
+3. Select Copy artifacts from another project.
+4. Enter:
+Field	Value
+Project name	MavenJava_Build
+Which build	Stable build only
+Artifacts to copy	**/*
+
+This copies the files archived by the previous job into the testing job's workspace.
+Step 5: Execute Maven test
+1. Click Add build step.
+2. Select Invoke top-level Maven targets.
+3. Enter:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	test
+
+The test goal runs the tests defined in the Maven project.
+Step 6: Archive the artifacts
+1. Scroll to Post-build Actions.
+2. Click Add post-build action.
+3. Select Archive the artifacts.
+4. Enter:
+**/*
+Step 7: Save
+Click Apply, then Save.
+MavenJava_Test created
+
+5. Create MavenJava_Pipeline View
+Now we will visually connect the two jobs.
+Step 1: Create the view
+1. Go to the Jenkins dashboard.
+2. Beside the All tab, click the + icon.
+3. Enter the name:
+MavenJava_Pipeline
+4. Select Build Pipeline View.
+5. Click OK or Create.
+
+
+
+
+
+
+
+
+medium.com
+
+
+Step 2: Configure Pipeline Flow
+On the configuration page:
+1. Find Pipeline Flow.
+2. Set Layout to:
+Based on upstream/downstream relationship
+
+3. Set Initial Job to:
+
+MavenJava_Build
+4. Click Apply.
+5. Click Save.
+Your pipeline view should display:
+
+MavenJava_Build → MavenJava_Test
+Step 3: Run the pipeline
+1. Open the MavenJava_Pipeline tab.
+2. Find the trigger button, usually labelled Run or shown as a play icon.
+3. Click it.
+4. Wait for the build to complete.
+5. Click the small build box to open the build details.
+6. Open Console Output.
+7. Check the output.
+
+
+
+
+
+
+
+
+ratheeshcloud.com
+
+
+Java pipeline complete when both jobs succeed
+Check for:
+BUILD SUCCESS
+
+
+Also verify that MavenJava_Test was triggered automatically and that its artifacts were archived.
+
+Part B – Maven Web Automation
+Now we will create three jobs:
+1. MavenWeb_Build
+2. MavenWeb_Test
+3. MavenWeb_Deploy
+The final job deploys a WAR file to Tomcat.
+6. Create MavenWeb_Build
+Step 1: Create a new job
+1. Go to the Jenkins dashboard.
+2. Click New Item.
+3. Enter:
+   
+   MavenWeb_Build
+4. Select Freestyle project.
+5. Click OK.
+Step 2: Enter description
+Enter:
+
+Web Build demo
+Step 3: Configure Git
+1. Scroll to Source Code Management.
+2. Select Git.
+3. Enter your teacher-provided Maven Web GitHub repository URL.
+4. Under Branches to build, enter the correct branch.
+The experiment sheet mentions:
+
+*/Main or master
+
+Again, use the branch that exists in the repository.
+Step 4: Add Maven clean
+1. Scroll to Build Steps.
+2. Click Add build step.
+3. Select Invoke top-level Maven targets.
+4. Enter:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	clean
+
+Step 5: Add Maven install
+1. Click Add build step again.
+2. Select Invoke top-level Maven targets.
+3. Enter:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	install
+
+Step 6: Archive artifacts
+1. Scroll to Post-build Actions.
+2. Select Archive the artifacts.
+3. Enter:
+   
+   **/*
+Step 7: Trigger MavenWeb_Test
+1. Click Add post-build action.
+2. Select Build other projects.
+3. Enter:
+   
+   MavenWeb_Test
+4. Select Only if build is stable, if that option is available.
+Step 8: Save
+Click Apply, then Save.
+MavenWeb_Build created
+
+7. Create MavenWeb_Test
+Step 1: Create a new job
+1. Click New Item.
+2. Enter:
+MavenWeb_Test
+3. Select Freestyle project.
+4. Click OK.
+Step 2: Enter description
+Enter:
+
+Test demo
+Step 3: Configure Build Environment
+Tick:
+
+Delete the workspace before build starts
+Step 4: Copy artifacts
+Under Build Steps:
+1. Click Add build step.
+2. Select Copy artifacts from another project.
+3. Enter:
+Field	Value
+Project name	MavenWeb_Build
+Which build	Stable build only
+Artifacts to copy	**/*
+
+Step 5: Run Maven test
+1. Click Add build step.
+2. Select Invoke top-level Maven targets.
+3. Enter:
+Field	Value
+Maven Version	MAVEN_HOME
+Goals	test
+
+Step 6: Archive artifacts
+1. Scroll to Post-build Actions.
+2. Select Archive the artifacts.
+3. Enter:
+**/*
+Step 7: Trigger deployment job
+1. Click Add post-build action.
+2. Select Build other projects.
+3. Enter:
+MavenWeb_Deploy
+Step 8: Save
+Click Apply, then Save.
+MavenWeb_Test created
+
+8. Create MavenWeb_Deploy
+This is the most important part of the web pipeline.
+
+This job copies the tested WAR file and deploys it to the Tomcat server.
+Step 1: Create the job
+1. Click New Item.
+2. Enter:
+MavenWeb_Deploy
+3. Select Freestyle project.
+4. Click OK.
+Step 2: Enter description
+Enter:
+
+Web Code Deployment
+Step 3: Configure Build Environment
+Tick:
+
+Delete the workspace before build starts
+Step 4: Copy artifacts from MavenWeb_Test
+Under Build Steps:
+1. Click Add build step.
+2. Select Copy artifacts from another project.
+3. Enter:
+Field	Value
+Project name	MavenWeb_Test
+Which build	Stable build only
+Artifacts to copy	**/*
+
+This is important because the deployment job needs the WAR file generated by the previous job.
+Step 5: Configure deployment to Tomcat
+1. Scroll down to Post-build Actions.
+2. Click Add post-build action.
+3. Select:
+Deploy WAR/EAR to a container
+
+4. Configure the following fields:
+Field	Value
+WAR/EAR File	**/*.war
+Context path	Webpath
+
+What does this mean?
+- **/*.war tells Jenkins to locate a WAR file anywhere inside the workspace.
+- Webpath is the application context path.
+For example, after successful deployment, your application will be accessible at:
+
+http://localhost:8085/Webpath
+Step 6: Configure Tomcat container
+Under the container section:
+1. Click Add container.
+2. Select Tomcat 9.x Remote.
+3. Add your Tomcat credentials.
+Use your previous Tomcat configuration:
+Field	Value
+Username	admin
+Password	1234
+Tomcat URL	http://localhost:8085/
+
+If the credentials are not already stored:
+1. Click Add beside Credentials.
+2. Select Jenkins.
+3. Choose username and password.
+4. Enter the credentials.
+5. Save them.
+6. Select the newly created credentials.
+
+
+
+
+
+
+
+
+middlewareinventory.com
+
+
+Important Tomcat detail: Your previous setup used HTTP on port 8085. The experiment document shows https://localhost:8085/, but use HTTP for your existing setup unless you have specifically configured HTTPS for Tomcat.
+
+Also, the Tomcat user must have the manager-script role for remote deployment. The manager-gui role allows access to the browser-based Manager interface.
+Step 7: Save the deployment job
+Click Apply, then Save.
+MavenWeb_Deploy created
+
+9. Create MavenWeb_Pipeline View
+Step 1: Create the view
+1. Go to the Jenkins dashboard.
+2. Click the + icon beside the All tab.
+3. Enter:
+MavenWeb_Pipeline
+4. Select Build Pipeline View.
+5. Click OK.
+Step 2: Configure Pipeline Flow
+Set:
+Field	Value
+Layout	Based on upstream/downstream relationship
+Initial Job	MavenWeb_Build
+
+Click Apply, then Save.
+
+Your pipeline should look like this:
+MavenWeb_Build
+
+
+MavenWeb_Test
+
+
+MavenWeb_Deploy
+
+
+
+10. Run the Maven Web pipeline
+Now we execute the complete pipeline.
+1. Open the MavenWeb_Pipeline tab.
+2. Click Run or the play icon.
+3. Jenkins starts MavenWeb_Build.
+4. After a successful build, Jenkins triggers MavenWeb_Test.
+5. After the test job completes, Jenkins triggers MavenWeb_Deploy.
+6. Wait until all three jobs finish.
+7. Click the small build boxes to open their details.
+8. Open Console Output for each job.
+9. Check whether all three jobs show successful builds.
+
+
+
+
+
+
+
+
+mabl.com
+
+
+Look for:
+BUILD SUCCESS
+
+
+For the deployment job, also look for a successful deployment message in the console output.
+Step 2: Verify the application in Tomcat
+1. Open a new browser tab.
+2. Enter:
+   
+   http://localhost:8085/
+3. Open the Manager App.
+4. Enter the Tomcat username and password.
+5. Look for the application with the context path:
+   
+   /Webpath
+6. Click the application link.
+Your web application's output should appear.
+
+Part C – Troubleshooting common errors
+These are worth understanding because Jenkins experiments often fail due to configuration mistakes.
+11. Common errors and their solutions
+Error	Reason	What to do
+mvn is not recognized	Maven not installed or not configured	Check Maven installation and Jenkins MAVEN_HOME
+No such Maven installation	Tool name mismatch	Set the Maven version to MAVEN_HOME
+Couldn't find any revision to build	Wrong Git URL or branch	Verify the repository URL and branch
+BUILD FAILURE	Compilation or test error	Read Console Output and identify the first actual error
+No artifacts found	Archive pattern or output path is wrong	Check the build job's archived files
+No wars found	No WAR was generated or copied	Check target/*.war and the Copy Artifact configuration
+Connection refused	Tomcat is not running or URL/port is wrong	Start Tomcat and verify port 8085
+401 Unauthorized	Incorrect Tomcat credentials	Check username/password and roles
+403 Forbidden	Tomcat Manager access restrictions	Check Manager access configuration
+Deployment fails	WAR file or Tomcat configuration problem	Check the Deploy job's console output

@@ -27,3 +27,1141 @@ nagios
 docker stop nagiosdemo
 docker rm nagiosdemo
 docker rmi jasonrivers/nagios:latest //careful
+
+
+
+2. Install the prerequisites
+Step 1
+You need:
+1. Windows 10/11.
+2. Virtualization enabled in BIOS.
+3. A hypervisor such as Docker Desktop, Hyper-V or VirtualBox.
+4. Minikube.
+5. kubectl (Kubernetes command-line tool).
+For your practical, we'll use Docker Desktop as the Minikube driver.
+
+
+
+
+
+
+
+
+uomresearchit.github.io
+
+
+Step 1.1 — Check Docker Desktop
+1. Open Docker Desktop.
+2. Wait until Docker Engine starts.
+3. Open PowerShell.
+4. Execute:
+docker --version
+
+
+Then:
+docker info
+
+
+If these commands work, Docker is ready.
+
+Expected:
+
+Docker version information and Docker Engine details should appear.
+3. Download and install Minikube
+Step 2
+Step 2.1 — Open PowerShell as Administrator
+Execute:
+curl.exe -LO https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe
+
+
+This downloads the Minikube installer.
+Step 2.2 — Install Minikube
+Execute:
+.\minikube-installer.exe
+
+
+Follow the installation instructions.
+Step 2.3 — Verify installation
+Close PowerShell, reopen it and execute:
+minikube version
+
+
+You should see the installed Minikube version.
+4. Add Minikube to PATH (if required)
+Step 3
+If Windows says minikube is not recognized, add its installation directory to PATH.
+1. Search for Environment Variables in Windows.
+2. Open Edit the system environment variables.
+3. Click Environment Variables.
+4. Under System Variables, select Path.
+5. Click Edit.
+6. Click New.
+7. Add:
+C:\Program Files\Minikube
+
+
+8. Click OK on all windows.
+9. Reopen PowerShell.
+Verify:
+minikube version
+
+
+5. Start the Minikube cluster
+Step 4
+Now we start Kubernetes.
+
+Execute:
+minikube start --driver=docker
+
+
+
+
+
+
+
+
+
+
+sensu.io
+
+
+What happens here?
+1. Minikube uses Docker as its driver.
+2. It creates the Minikube node.
+3. It downloads the required Kubernetes components if necessary.
+4. It starts the Kubernetes cluster.
+Wait until the cluster starts successfully.
+Verify Minikube
+minikube status
+
+
+You should see components such as:
+- host: Running
+- kubelet: Running
+- apiserver: Running
+Important exam command
+minikube kubectl -- get pods -A
+
+
+This lists pods across all Kubernetes namespaces.
+6. Interact with Kubernetes using kubectl
+Step 5
+kubectl is the command-line tool used to communicate with Kubernetes.
+
+Check the client version if you have kubectl installed separately:
+kubectl version --client
+
+
+You can also use Minikube's bundled kubectl:
+minikube kubectl -- get nodes
+
+
+Expected output: Your Minikube node should appear.
+Open the Kubernetes dashboard (optional)
+Execute:
+minikube dashboard
+
+
+A browser window should open with the Kubernetes dashboard.
+
+
+
+
+
+
+
+
+ionos.com
+
+
+
+PART 1 — Minikube Automation
+Now comes the most important practical portion. Learn these commands in order.
+7. Start the Minikube cluster
+Automation — Step 1
+Open PowerShell:
+minikube start
+
+
+Since we are using Docker Desktop, you can also explicitly specify:
+minikube start --driver=docker
+
+
+Verify:
+minikube status
+
+
+8. Create an Nginx deployment
+Automation — Step 2
+First, understand what we are doing.
+
+We want to run an Nginx web server inside Kubernetes.
+
+Nginx is a web server that can serve web pages to users.
+
+
+
+
+
+
+
+
+thenewstack.io
+
+
+Execute:
+kubectl create deployment mynginx --image=nginx
+
+
+Understand this command:
+Command	Meaning
+kubectl	Communicate with Kubernetes
+create deployment	Create a deployment
+mynginx	Deployment name
+--image=nginx	Use the Nginx Docker image
+
+What happens?
+1. Kubernetes creates a Deployment called mynginx.
+2. The Deployment manages Pods.
+3. Kubernetes downloads the Nginx image if necessary.
+4. A Pod is created.
+5. Nginx runs inside the Pod.
+If the deployment already exists
+Your manual mentions:
+kubectl set image deployment/mynginx nginx=nginx:latest
+
+
+This updates the Nginx container image in the existing deployment.
+
+Important: The container name here is nginx, which is the default name created by the command above.
+9. Verify the deployment
+Automation — Step 2 continued
+Execute these commands one by one.
+
+Command 1:
+kubectl get deployments
+
+
+Shows the deployments in your Kubernetes cluster.
+
+Expected output will look similar to:
+NAME      READY   UP-TO-DATE   AVAILABLE
+mynginx   1/1     1            1
+
+
+Command 2:
+kubectl get pods
+
+
+Shows the Pods running in your cluster.
+
+Example:
+NAME                       READY   STATUS
+mynginx-xxxxxxxxxx-xxxxx   1/1     Running
+
+
+Command 3:
+kubectl describe pods
+
+
+Shows detailed information about the Pods, including:
+- Pod name
+- IP address
+- Node
+- Container information
+- Events
+- Errors, if any
+
+
+
+
+
+
+
+
+ionos.com
+
+
+Remember the difference
+Command	Purpose
+kubectl get deployments	Lists deployments
+kubectl get pods	Lists Pods
+kubectl describe pods	Detailed Pod information
+
+10. Expose the deployment as a Service
+Automation — Step 3
+Currently, Nginx is running inside the Pod.
+
+We need a way to access it through a network connection.
+
+For this, we create a Kubernetes Service.
+
+Execute:
+kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80
+
+
+Understand each parameter:
+Parameter	Meaning
+expose	Expose the deployment
+deployment mynginx	Deployment to expose
+--type=NodePort	Create a NodePort service
+--port=80	Service port
+--target-port=80	Port inside the application container
+
+What happens?
+
+The Service provides a stable network endpoint for accessing the Nginx Pods.
+
+Verify:
+kubectl get services
+
+
+You should see a Service named mynginx.
+
+
+
+
+
+
+
+
+ashadali.medium.com
+
+
+11. Scale the deployment to 4 replicas
+Automation — Step 4
+This is one of the most important steps.
+
+What is scaling?
+
+Suppose one Pod is handling all incoming requests.
+
+If more users access your application, one Pod might not be enough.
+
+We can increase the number of Pods using scaling.
+
+Initially:
+Before scaling
+Pod 1
+Nginx
+
+1 replica
+
+Execute:
+kubectl scale deployment mynginx --replicas=4
+
+
+What happens?
+
+Kubernetes increases the number of Pods from 1 to 4.
+After scaling
+Pod 1
+Nginx
+
+Pod 2
+Nginx
+
+Pod 3
+Nginx
+
+Pod 4
+Nginx
+
+
+4 replicas
+
+Verify:
+kubectl get pods
+
+
+You should see four Nginx Pods.
+
+Also execute:
+kubectl get deployment
+
+
+It should show something similar to:
+NAME      READY
+mynginx   4/4
+
+
+Your manual also gives:
+kubectl get service mynginx
+
+
+This checks the Service.
+
+Exam memory trick:
+
+scale = Change the number of Pods.
+
+--replicas=4 = Maintain four copies of the application.
+12. Access the Nginx application
+Automation — Step 5
+Now we want to open Nginx in our browser.
+
+There are two methods in your manual.
+Method 1: Port Forwarding (recommended)
+Execute:
+kubectl port-forward svc/mynginx 8081:80
+
+
+Understand:
+- svc/mynginx = Service name.
+- 8081 = Port on your computer.
+- 80 = Port of the Nginx Service.
+
+
+
+
+
+
+
+
+refine.dev
+
+
+Now open Chrome and enter:
+http://localhost:8081Expected output
+You should see:
+
+
+
+
+
+
+
+
+noob2poweruser.com
+
+
+Important: Keep the PowerShell window running while accessing the webpage. If you close it or press Ctrl+C, port forwarding stops.
+Method 2: Minikube Tunnel / Service URL
+If the first method gives you an error, your manual provides an alternative.
+
+Open another administrator PowerShell window and execute:
+minikube tunnel
+
+
+Keep this terminal running.
+
+Open another terminal and execute:
+minikube service mynginx --url
+
+
+It will display a URL.
+
+Open that URL in your browser.
+
+Note: On Windows with the Docker driver, the tunnel method may require additional networking setup. Port forwarding is usually simpler for this experiment.
+13. Open the Minikube dashboard
+Your manual also asks you to open the Kubernetes dashboard.
+
+Execute:
+minikube dashboard
+
+
+The dashboard lets you visually inspect:
+- Deployments
+- Pods
+- Services
+- Namespaces
+- Cluster resources
+
+
+
+
+
+
+
+
+ionos.at
+
+
+14. Stop and clean up Minikube
+Automation — Step 6
+Once you finish the experiment, delete the resources.
+
+Step 1: Delete the deployment
+kubectl delete deployment mynginx
+
+
+This deletes the deployment and its managed Pods.
+
+Step 2: Delete the Service
+kubectl delete service mynginx
+
+
+This removes the Service.
+
+Step 3: Stop Minikube (optional)
+minikube stop
+
+
+This stops the Minikube cluster without deleting its configuration.
+
+Step 4: Delete the Minikube cluster (optional)
+minikube delete
+
+
+This deletes the Minikube cluster.
+Important
+Do not execute minikube delete if you still need the cluster for another experiment. It removes the cluster, whereas minikube stop simply stops it.
+
+PART 2 — Nagios using Docker
+Now we'll perform the second major part.
+15. Understand Nagios
+Nagios is an open-source infrastructure monitoring tool.
+
+Imagine you are managing a server.
+
+You want to know:
+- Is the server running?
+- Is the CPU overloaded?
+- Are services working?
+- Are there any failures?
+Nagios helps administrators monitor these things and receive alerts.
+
+
+
+
+
+
+
+
+dash0.com
+
+
+16. Pull the Nagios Docker image
+Nagios — Step 1
+First, open Docker Desktop and ensure Docker Engine is running.
+
+Open PowerShell and execute:
+docker pull jasonrivers/nagios:latest
+
+
+What does this command do?
+- docker pull downloads an image.
+- jasonrivers/nagios is the image name.
+- latest indicates the latest tagged version.
+Wait until the image downloads successfully.
+
+Verify:
+docker images
+
+
+You should find:
+jasonrivers/nagios
+
+
+
+
+
+
+
+
+
+
+tutorialspoint.com
+
+
+17. Run the Nagios container
+Nagios — Step 2
+Execute:
+docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+
+
+Let's break this command down.
+Part	Meaning
+docker run	Create and start a container
+--name nagiosdemo	Give the container a name
+-p 8888:80	Map host port 8888 to container port 80
+jasonrivers/nagios:latest	Use the Nagios image
+
+Understand port mapping:
+Your Windows computer
+8888
+Host port
+
+Nagios Docker container
+80
+Container port
+
+This means when you visit port 8888 on your computer, Docker forwards the request to port 80 inside the Nagios container.
+
+Important: This command runs in the foreground. Keep this terminal open while using Nagios.
+
+If you want to run it in the background instead, you can use:
+docker run -d --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+
+
+For the lab manual, remember the original command.
+18. Access the Nagios dashboard
+Nagios — Step 3
+Open Chrome and enter:
+http://localhost:8888You should see a login prompt.
+
+Use these credentials from your lab manual:
+Nagios Login Credentials
+Usernamenagiosadmin
+ Copy
+
+
+Passwordnagios
+ Copy
+
+
+After login, the Nagios dashboard should appear.
+
+
+
+
+
+
+
+
+subscription.packtpub.com
+
+
+19. Explore the Nagios dashboard
+Nagios — Step 4
+Your manual specifically asks you to explore three sections.
+A. Hosts
+Click Hosts in the Nagios dashboard.
+
+Hosts are the systems or devices being monitored.
+
+Examples:
+- Servers
+- Computers
+- Network devices
+You can view whether a host is UP or DOWN.
+B. Services
+Click Services.
+
+Services are individual resources or processes being monitored on a host.
+
+Examples:
+- CPU usage
+- Memory
+- Disk space
+- Network services
+C. Alerts
+Explore the alerts and notifications.
+
+These help administrators identify issues and understand when something goes wrong.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6
+
+
+
+
+
+
+
+
+
+
+
+20. Monitor host details
+Nagios — Step 5
+Your manual gives three important things to observe.
+
+1. Host Status
+
+Indicates whether the monitored host is:
+- UP — Host is reachable and operating.
+- DOWN — Host is not responding as expected.
+2. Metrics
+
+View monitoring information such as:
+- CPU usage
+- Memory status
+- Network activity
+The available metrics depend on which monitoring checks and plugins have been configured.
+
+3. Actions
+
+Nagios provides actions such as:
+- Reschedule checks.
+- Disable notifications.
+- Schedule downtime.
+These options help administrators manage monitoring activities.
+21. Stop and remove Nagios
+Nagios — Step 6
+Now we clean up.
+
+Step 1: Stop the container
+
+Open another PowerShell window and execute:
+docker stop nagiosdemo
+
+
+This stops the running container.
+
+Step 2: Delete the container
+docker rm nagiosdemo
+
+
+This removes the stopped container.
+
+Step 3: List Docker images
+docker images
+
+
+This displays all downloaded images.
+
+Step 4: Remove the Nagios image (optional)
+
+Your manual contains a typing error in this command.
+
+The correct command is:
+docker rmi jasonrivers/nagios:latest
+
+
+This removes the Nagios image if no remaining container depends on it.
+
+Remember the difference:
+Command	Function
+docker stop	Stops a container
+docker rm	Removes a container
+docker images	Lists images
+docker rmi	Removes an image
+
+Observe the Docker container
+Your manual also asks you to observe the Docker containers and confirm that Nagios was installed and running on port 8888.
+
+You can inspect this using:
+docker ps
+
+
+To see stopped containers too:
+docker ps -a
+
+
+
+PART 3 — AWS Free Tier Account Creation
+This is the third part of your experiment.
+22. Open the AWS website
+AWS — Step 1
+Open:
+Amazon Web Services official website
+
+
+
+
+
+
+
+freecodecamp.org
+
+
+Click Create an AWS Account.
+23. Enter account details
+AWS — Step 2
+1. Enter your email address.
+2. Enter your account name.
+3. Verify your email address.
+4. AWS sends a verification code to your email.
+5. Enter the verification code.
+Your email address will be associated with your AWS account.
+24. Provide contact details
+AWS — Step 3
+1. Enter your contact details.
+2. Select your country.
+3. Read and accept the terms and conditions.
+4. Click Continue.
+25. Provide billing details
+AWS — Step 4
+1. Enter your payment details.
+2. Complete the required verification.
+3. Follow the payment verification instructions.
+Important: Your manual mentions a ₹2 verification charge that is credited back. Do not assume that this exact amount or refund timing is guaranteed. The verification amount can vary.
+
+Also, AWS account creation does not mean every AWS service is free. Check pricing before launching resources.
+26. Verify your mobile number
+AWS — Step 5
+1. Select your country.
+2. Enter your working mobile number.
+3. Click Send SMS.
+4. Receive the verification code.
+5. Enter the code.
+27. Select the AWS support plan
+AWS — Step 6
+Your manual instructs you to:
+1. Select the Basic Support plan.
+2. Click Complete Sign Up.
+This completes the account registration process.
+28. Open AWS Management Console
+AWS — Step 7
+1. Click AWS Management Console.
+2. Sign in as the Root user using your registered email address.
+3. Enter your password.
+4. Open the AWS Console.
+
+
+
+
+
+
+
+
+dev.to
+
+
+29. Select your role and interest
+Your manual instructs you to select:
+- Role: Academic/Researcher
+- Interest: DevOps
+Click Submit.
+
+You should now be able to access the AWS Management Console.
+Experiment completed
+
+PART 4 — Scenario-Based Questions (SBQs)
+This section is extremely important because your manual contains 13 scenario-based questions.
+
+I'll give you the question, the situation, and a simple answer you can write in the examination.
+Q1. Your Pod keeps restarting repeatedly. What will you do?
+Meaning: Your application Pod starts and crashes repeatedly.
+
+This condition is commonly called CrashLoopBackOff.
+
+Steps to troubleshoot:
+
+1. Check the Pod:
+kubectl get pods
+
+
+2. Describe the Pod:
+kubectl describe pod <pod-name>
+
+
+3. Check application logs:
+kubectl logs <pod-name>
+
+
+4. Check previous container logs:
+kubectl logs <pod-name> --previous
+
+
+5. Identify the error and fix it.
+
+Possible reasons:
+- Application crash.
+- Incorrect configuration.
+- Missing environment variables.
+- Incorrect container command.
+- Insufficient memory.
+Exam answer: Check Pod status using kubectl get pods, inspect events using kubectl describe pod, and check logs using kubectl logs. Identify and fix the application or configuration error.
+Q2. A Kubernetes Pod is stuck in Pending state. What are the reasons and how will you troubleshoot it?
+Meaning: Kubernetes has not been able to schedule the Pod onto a node.
+
+Steps:
+
+1. Check Pod status:
+kubectl get pods
+
+
+2. Describe the Pod:
+kubectl describe pod <pod-name>
+
+
+3. Check the Events section.
+
+Possible reasons:
+- Insufficient CPU or memory.
+- Node unavailable.
+- Persistent Volume not available.
+- Incorrect node selector.
+- Scheduling constraints.
+4. Fix the identified issue.
+
+Exam answer: Use kubectl describe pod to examine scheduling events. Check node resources, node availability, volume availability and scheduling constraints.
+Q3. How would you debug a failed deployment in Kubernetes?
+Steps:
+
+1. Check deployments:
+kubectl get deployments
+
+
+2. Check Pods:
+kubectl get pods
+
+
+3. Describe deployment:
+kubectl describe deployment mynginx
+
+
+4. Check Pod logs:
+kubectl logs <pod-name>
+
+
+5. Check events:
+kubectl get events
+
+
+6. Fix the problem and verify the deployment.
+
+Exam answer: Use kubectl get deployments, kubectl get pods, kubectl describe deployment and kubectl logs to identify and resolve deployment failures.
+Q4. Multiple replicas exist, but some Pods are failing health checks. How will you identify the root cause and fix it?
+Meaning: You have multiple copies of an application, but some are unhealthy.
+
+Steps:
+
+1. Check Pods:
+kubectl get pods
+
+
+2. Describe the unhealthy Pod:
+kubectl describe pod <pod-name>
+
+
+3. Check logs:
+kubectl logs <pod-name>
+
+
+4. Check readiness and liveness probe configuration.
+5. Check application health and resource availability.
+6. Correct the configuration or application issue.
+Possible reasons:
+- Incorrect health-check URL.
+- Wrong application port.
+- Application is taking too long to start.
+- Insufficient resources.
+- Application crashes.
+Exam answer: Identify unhealthy Pods using kubectl get pods, inspect events and probes using kubectl describe pod, check logs and correct the health-check or application configuration.
+Q5. How do you roll back a faulty deployment?
+Meaning: You updated your application, but the new version is not working. You want to return to the previous version.
+
+Execute:
+kubectl rollout history deployment/mynginx
+
+
+This displays deployment revision history.
+
+Now roll back:
+kubectl rollout undo deployment/mynginx
+
+
+Verify:
+kubectl rollout status deployment/mynginx
+
+
+Exam answer: Use kubectl rollout undo deployment/mynginx to revert to the previous working deployment revision.
+Q6. How do you debug a running Pod?
+Steps:
+
+1. List Pods:
+kubectl get pods
+
+
+2. Get detailed information:
+kubectl describe pod <pod-name>
+
+
+3. Check logs:
+kubectl logs <pod-name>
+
+
+4. Execute commands inside the running container:
+kubectl exec -it <pod-name> -- sh
+
+
+5. Inspect application files, processes and configuration.
+
+Exam answer: Use kubectl describe, kubectl logs and kubectl exec to investigate a running Pod.
+Q7. You need to expose a local service externally. How do you do it?
+Your manual uses two methods.
+
+Method 1: Port Forwarding
+kubectl port-forward svc/mynginx 8081:80
+
+
+Access:
+http://localhost:8081
+
+
+This exposes the Service through a port on your local machine.
+
+Method 2: Minikube Service
+minikube service mynginx --url
+
+
+This provides a URL to access the Service.
+
+For services that must be reachable externally in a real deployment, you can also use a LoadBalancer or Ingress, depending on the cluster environment.
+
+Exam answer: Expose the application using a NodePort Service or use kubectl port-forward. In Minikube, minikube service mynginx --url can provide an access URL.
+Q8. How do you start and stop Nagios?
+Nagios runs inside a Docker container in this experiment.
+
+Start Nagios:
+docker start nagiosdemo
+
+
+Stop Nagios:
+docker stop nagiosdemo
+
+
+Check whether it is running:
+docker ps
+
+
+Note: docker start works when the container already exists. To create it for the first time, use docker run.
+Q9. You installed Nagios, but the web interface shows "Unable to connect to Nagios process". How do you resolve it?
+Possible reasons:
+- Nagios process is not running.
+- Nagios configuration error.
+- Incorrect permissions.
+- Docker container stopped.
+- Nagios service failed to start.
+Troubleshooting:
+
+1. Check container:
+docker ps -a
+
+
+2. Start the container if stopped:
+docker start nagiosdemo
+
+
+3. Check container logs:
+docker logs nagiosdemo
+
+
+4. Inspect the Nagios process inside the container:
+docker exec nagiosdemo ps
+
+
+5. Check Nagios configuration and service status inside the container.
+
+Exam answer: Check the Docker container status, inspect logs using docker logs, verify that the Nagios process is running and correct configuration or permission errors.
+Q10. You added a new host in Nagios, but it is not appearing on the web interface. How do you check?
+Possible reasons:
+- Incorrect host configuration.
+- Configuration file not loaded.
+- Nagios configuration validation failure.
+- Nagios service not restarted or reloaded.
+Steps:
+1. Check the host configuration.
+2. Verify the configuration file.
+3. Validate the Nagios configuration.
+4. Reload or restart Nagios.
+5. Refresh the web interface.
+For this Docker image, you can inspect the container using:
+docker logs nagiosdemo
+
+
+Exam answer: Verify the host configuration, validate the Nagios configuration, check the Nagios logs and reload or restart the service.
+Q11. How can you check whether Nagios is running properly?
+Execute:
+docker ps
+
+
+This checks whether the Nagios container is running.
+
+Execute:
+docker logs nagiosdemo
+
+
+This displays the container logs.
+
+Also open:
+http://localhost:8888Check whether the Nagios dashboard loads correctly.
+
+Exam answer: Check the Docker container status using docker ps, inspect logs using docker logs and verify that the Nagios web interface is accessible.
+Q12. How do you view Nagios logs in real time?
+Execute:
+docker logs -f nagiosdemo
+
+
+Explanation:
+- docker logs displays container logs.
+- -f means follow.
+- It continuously displays new log entries.
+To stop viewing logs, press:
+Ctrl + C
+
+
+Exam answer: Use docker logs -f nagiosdemo to monitor Nagios container logs in real time.
+Q13. What are the advantages of using Nagios?
+Write these points:
+1. Infrastructure Monitoring: Monitors servers, network devices and applications.
+2. Alerting: Notifies administrators when problems occur.
+3. Problem Detection: Helps identify failures quickly.
+4. Service Monitoring: Checks whether services are functioning correctly.
+5. Performance Monitoring: Helps monitor resource usage through configured checks.
+6. Open Source: Nagios Core is available as open-source software.
+7. Improved Reliability: Helps administrators identify and resolve problems before they cause major failures.
+
+PART 5 — Last-minute exam revision
+This is the section I want you to revise before sleeping and tomorrow before entering the lab.
+30. Complete command cheat sheet
+Don't try to memorize every explanation word by word. Memorize the commands in execution order.
+Kubernetes commands
+No.	Command	Purpose
+1	minikube version	Check version
+2	minikube start --driver=docker	Start cluster
+3	minikube status	Check cluster
+4	kubectl get nodes	List nodes
+5	kubectl create deployment mynginx --image=nginx	Create deployment
+6	kubectl get deployments	List deployments
+7	kubectl get pods	List Pods
+8	kubectl describe pods	Pod details
+9	kubectl expose deployment mynginx --type=NodePort --port=80 --target-port=80	Expose deployment
+10	kubectl scale deployment mynginx --replicas=4	Scale to 4 Pods
+11	kubectl get service mynginx	Check Service
+12	kubectl port-forward svc/mynginx 8081:80	Access Nginx
+13	minikube dashboard	Open dashboard
+14	kubectl delete deployment mynginx	Delete deployment
+15	kubectl delete service mynginx	Delete Service
+16	minikube stop	Stop cluster
+17	minikube delete	Delete cluster
+
+Nagios commands
+No.	Command	Purpose
+1	docker pull jasonrivers/nagios:latest	Download image
+2	docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest	Run Nagios
+3	docker ps	List running containers
+4	docker logs nagiosdemo	View logs
+5	docker logs -f nagiosdemo	Live logs
+6	docker stop nagiosdemo	Stop container
+7	docker start nagiosdemo	Start existing container
+8	docker rm nagiosdemo	Remove container
+9	docker images	List images
+10	docker rmi jasonrivers/nagios:latest	Remove image
+
+
+31. Understand these differences
+These are easy marks in viva.
+Term 1	Term 2	Difference
+Kubernetes	Minikube	Orchestration system vs local Kubernetes environment
+Pod	Container	Smallest Kubernetes deployable unit vs application runtime
+Deployment	Service	Manages Pods vs provides network access
+Scaling	Deployment	Scaling changes replica count; Deployment manages desired state
+Docker image	Docker container	Template vs running instance
+docker stop	docker rm	Stop vs remove
+minikube stop	minikube delete	Stop cluster vs delete cluster
+Nagios	Minikube	Infrastructure monitoring vs Kubernetes environment

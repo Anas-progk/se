@@ -1,0 +1,624 @@
+CI using GitHub Webhooks
+Step 1: Check your Jenkins server
+1. Open your browser.
+2. Visit:
+http://localhost:8080
+3. Make sure your Jenkins dashboard loads.
+4. Keep Jenkins running throughout the experiment.
+Expected result
+
+
+
+
+
+
+
+
+ideasawakened.com
+
+
+Important: Do not close the Jenkins terminal or stop its Windows service while performing this experiment.
+Step 2: Download and install ngrok
+Why do we need ngrok?
+
+Your Jenkins is running on your laptop using localhost:8080.
+
+But GitHub's servers are on the internet. They cannot directly access your laptop's localhost.
+
+ngrok solves this problem by creating a publicly accessible URL that forwards requests to your local Jenkins server.
+
+
+
+
+
+
+
+
+charliee2000.github.io
+
+
+2.1 Download ngrok
+1. Open: ngrok official download page.
+2. Sign up for a free account if required.
+3. Download ngrok for Windows.
+4. Extract the downloaded ZIP file.
+5. Locate ngrok.exe.
+You can extract it into a folder such as:
+C:\ngrok\
+    ngrok.exe
+
+
+2.2 Open Command Prompt inside the ngrok folder
+1. Open the folder containing ngrok.exe.
+2. Click the address bar in File Explorer.
+3. Type cmd.
+4. Press Enter.
+A Command Prompt will open in that directory.
+2.3 Connect your ngrok account
+1. Open ngrok Authtoken page.
+2. Copy your authentication token.
+3. In Command Prompt, execute:
+ngrok config add-authtoken YOUR_AUTH_TOKEN
+
+
+Replace YOUR_AUTH_TOKEN with the actual token you copied.
+
+Example:
+ngrok config add-authtoken 2abcxxxxxxxxxxxxxxxx
+
+
+Expected result
+You should see a message indicating that the authtoken was saved.
+
+Security: Never share your ngrok authentication token with anyone.
+Step 3: Start the ngrok tunnel
+Now execute:
+ngrok http 8080
+
+
+Wait a few seconds.
+
+You should see something similar to:
+
+
+
+
+
+
+
+
+medium.com
+
+
+Look for:
+Session Status       online
+
+Forwarding           https://example.ngrok-free.dev
+                     -> http://localhost:8080
+
+
+Your generated URL will be different.
+
+For example:
+https://example.ngrok-free.dev
+
+
+IMPORTANT:
+- Copy your actual HTTPS URL.
+- Keep this Command Prompt open.
+- Do not stop the ngrok tunnel.
+- Your public URL may change when you restart ngrok.
+We will use this URL in GitHub.
+Step 4: Configure GitHub Webhook
+A webhook is a mechanism through which GitHub sends an HTTP request to another application when a particular event occurs.
+
+In our experiment:
+- Event: Push code to GitHub.
+- Sender: GitHub.
+- Receiver: Jenkins.
+- Purpose: Automatically trigger a Jenkins build.
+4.1 Open your GitHub repository
+1. Open GitHub.
+2. Log in.
+3. Open the repository you want to connect to Jenkins.
+4.2 Open Webhook settings
+Navigate through:
+Repository
+   |
+   v
+Settings
+   |
+   v
+Webhooks
+   |
+   v
+Add webhook
+
+
+
+
+
+
+
+
+
+
+cjh5414.github.io
+
+
+4.3 Fill in the webhook details
+You will see a form.
+
+Fill it as follows:
+Field	Value
+Payload URL	Your ngrok URL + /github-webhook/
+Content type	application/json
+Secret	Leave empty
+SSL verification	Enable
+Events	Just the push event
+Active	Checked
+
+Example Payload URL:
+https://example.ngrok-free.dev/github-webhook/
+
+
+Be careful: Do not enter only the ngrok URL. You must append:
+/github-webhook/
+
+
+4.4 Save the webhook
+Click:
+Add webhook
+
+
+GitHub will save the webhook and normally send an initial ping event.
+Expected result
+Your webhook should appear in the repository's webhook list.
+
+Step 5: Configure Jenkins to accept GitHub webhooks
+Now we need to tell Jenkins that it should start a build whenever GitHub sends a push event.
+5.1 Open Jenkins
+Visit:
+http://localhost:8080
+
+
+5.2 Open your existing Jenkins job
+1. From the dashboard, select the job you created previously.
+2. Click Configure.
+You can use an existing Freestyle or Pipeline job, provided it is configured to build from your GitHub repository.
+5.3 Configure Build Triggers
+Scroll down until you find:
+Build Triggers
+
+
+Look for this option:
+
+
+
+
+
+
+
+
+kshitijaa.hashnode.dev
+
+
+Select:
+☑ GitHub hook trigger for GITScm polling
+
+
+Do not confuse this with Poll SCM.
+
+We want the GitHub webhook trigger.
+5.4 Save
+Scroll to the bottom and click:
+Save
+
+
+Your Jenkins job is now configured to receive GitHub webhook events.
+Step 6: Test GitHub Webhook integration
+This is the most important practical step.
+
+We need to prove that pushing code to GitHub automatically triggers Jenkins.
+6.1 Open your local project
+Open the project connected to your Jenkins job in VS Code.
+6.2 Make a small code change
+For example, create a file named:
+webhook-test.txt
+
+
+Add:
+Testing Jenkins CI using GitHub Webhooks.
+
+
+Save the file.
+6.3 Push the changes to GitHub
+Open the VS Code terminal and execute:
+git add .
+
+
+Then:
+git commit -m "Testing GitHub webhook"
+
+
+Then:
+git push origin main
+
+
+If your branch is named master, use:
+git push origin master
+
+
+6.4 Verify the Jenkins build
+1. Return to Jenkins.
+2. Open your job.
+3. Observe the Build History.
+4. A new build should automatically appear.
+5. Open the latest build and check Console Output.
+
+
+
+
+
+
+
+
+howtoforge.com
+
+
+Expected result
+Jenkins should automatically start a build after the GitHub push, without you manually clicking Build Now.
+
+Part 1 is complete.
+
+PART 2 — Email Notifications on Build Success or Failure
+Now we will configure Jenkins to send an email whenever a build succeeds or fails.
+
+For this, we will use:
+- Gmail as the email service.
+- Gmail App Password for authentication.
+- Jenkins Email Extension Plugin.
+- Gmail SMTP server.
+Step 7: Enable Gmail 2-Step Verification
+Jenkins needs permission to send emails using your Gmail account.
+
+We will not use your normal Gmail password. We will generate a separate App Password.
+7.1 Open Google Account settings
+Visit:
+Google Account Settings1. Log in using your Gmail account.
+2. Open Security.
+3. Find How you sign in to Google.
+4. Open 2-Step Verification.
+5. Enable it if it is not already enabled.
+6. Complete the verification process.
+
+
+
+
+
+
+
+
+supportcenter.score.org
+
+
+7.2 Generate Gmail App Password
+After enabling 2-Step Verification:
+1. Open Google App Passwords.
+2. Enter your Google account password if requested.
+3. Enter the app name:
+Jenkins-Demo
+
+
+4. Click Create or Generate.
+5. Google will display a 16-character app password.
+
+
+
+
+
+
+
+
+guides.stellaraio.com
+
+
+Copy this password and store it securely.
+
+Important:
+- Do not use your normal Gmail password in Jenkins.
+- Do not share your App Password in screenshots or with anyone.
+- If Google does not offer App Passwords, check account eligibility and security restrictions. Some organizational or protected accounts do not support them.
+Step 8: Install Jenkins Email Extension Plugin
+Now we need to install a Jenkins plugin that provides email notification functionality.
+8.1 Open Jenkins
+Visit:
+http://localhost:8080
+
+
+8.2 Navigate to Manage Plugins
+From the Jenkins dashboard:
+Manage Jenkins
+       |
+       v
+Plugins
+       |
+       v
+Available plugins
+
+
+Depending on your Jenkins version, you may see Manage Plugins instead of Plugins.
+8.3 Search for the plugin
+In the search box, enter:
+Email Extension Plugin
+
+
+You should find:
+
+
+
+
+
+
+
+
+notes.kodekloud.com
+
+
+Select the checkbox next to:
+Email Extension Plugin
+
+
+Click:
+Install
+
+
+If Jenkins offers installation without restart, choose that option.
+
+Wait until the installation completes.
+
+If a restart is required, restart Jenkins and wait for it to become available again.
+
+Expected result: Email Extension Plugin should be installed successfully.
+Step 9: Configure Jenkins Global Email Settings
+This is an important configuration step.
+
+We need to tell Jenkins which SMTP server to use for sending emails.
+9.1 Open Configure System
+Navigate to:
+Dashboard
+    |
+    v
+Manage Jenkins
+    |
+    v
+System
+
+
+Depending on your version, this may be called Configure System.
+
+Scroll down until you find the email configuration sections.
+
+There are TWO sections we need to configure:
+1. E-mail Notification
+2. Extended E-mail Notification
+9.2 Configure E-mail Notification
+Find the section:
+E-mail Notification
+
+
+Fill in these values:
+E-mail Notification settings
+Field	Value
+SMTP Server	smtp.gmail.com
+Use SMTP Authentication	Enabled
+User Name	Your Gmail ID
+Password	Your Gmail App Password
+Use SSL	Enabled
+SMTP Port	465
+Reply-To Address	Your Gmail ID
+
+Use your own Gmail credentials, not the example account in the manual.
+
+For SMTP authentication, enter your Gmail address and App Password.
+
+If the password field has a credentials option, save the password as a Jenkins secret credential and select it.
+9.3 Test the email configuration
+In the same section, locate:
+Test configuration by sending test e-mail
+
+
+1. Enter an email address where you can receive messages.
+2. Click the test button.
+3. Wait for the result.
+
+
+
+
+
+
+
+
+stackoverflow.com
+
+
+Expected result
+You should receive a test email from Jenkins.
+
+Check your Gmail Inbox and Spam folder.
+9.4 Configure Extended E-mail Notification
+Now scroll down to:
+Extended E-mail Notification
+
+
+Configure:
+Field	Value
+SMTP Server	smtp.gmail.com
+SMTP Port	465
+Use SSL	Enabled
+Credentials	Gmail ID and App Password
+Default Content Type	text/html
+Default Recipients	Leave empty
+Triggers	Failure (or as required)
+
+For Credentials:
+1. Click Add if credentials are not already available.
+2. Select Jenkins credentials.
+3. Choose the appropriate credential type, normally Username with password.
+4. Enter your Gmail ID as the username.
+5. Enter the Gmail App Password as the password.
+6. Save the credential and select it.
+
+
+
+
+
+
+
+
+medium.com
+
+
+9.5 Save Global Configuration
+Scroll to the bottom of the page.
+
+Click:
+Save
+
+
+Your Jenkins global email configuration is complete.
+
+Step 10: Configure Email Notifications for Your Jenkins Job
+We have configured the global SMTP settings.
+
+Now we need to tell an individual Jenkins job when and to whom it should send emails.
+10.1 Open your Jenkins job
+1. Return to the Jenkins dashboard.
+2. Select your existing job.
+3. Click Configure.
+10.2 Find Post-build Actions
+Scroll down until you find:
+Post-build Actions
+
+
+Click:
+Add post-build action
+
+
+Select:
+Editable Email Notification
+
+
+
+
+
+
+
+
+
+
+notes.kodekloud.com
+
+
+10.3 Configure Editable Email Notification
+You will see several fields.
+
+Fill them as follows:
+Field	Value
+Project Recipient List	Your receiving Gmail address
+Content Type	text/plain or text/html
+Triggers	Failure and Success
+Attachments	Optional
+
+For example:
+Project Recipient List:
+
+yourmail@gmail.com
+
+
+You can add multiple recipients separated by commas.
+10.4 Configure Triggers
+Find the Triggers section.
+
+You need to configure:
+- Failure
+- Success
+These determine when Jenkins sends an email.
+
+
+
+
+
+
+
+
+pradeep-sg406.medium.com
+
+
+If the trigger has a configuration option, you can leave the default email subject and body initially.
+10.5 Save the job
+Scroll down and click:
+Save
+
+
+Your job is now configured to send emails based on build results.
+
+Step 11: Test Email Notifications
+We must test both conditions:
+1. Build Success.
+2. Build Failure.
+11.1 Test Successful Build
+1. Open your Jenkins job.
+2. Click Build Now.
+3. Wait for the build to complete.
+4. Check whether the build status is SUCCESS.
+5. Open your Gmail Inbox.
+You should receive an email notifying you of the successful build.
+
+
+
+
+
+
+
+
+blogs.vijaysingh.cloud
+
+
+11.2 Test Failed Build
+Now deliberately create a build failure.
+
+For a Freestyle job, one simple method is:
+1. Open your Jenkins job.
+2. Click Configure.
+3. Find the Build section.
+4. Add a temporary Execute Windows batch command build step.
+5. Enter:
+echo Testing build failure
+exit /b 1
+
+
+6. Save the job.
+7. Click Build Now.
+This command deliberately returns a non-zero exit code, causing the build to fail.
+Important
+Only use this temporary command for testing. Remove it after the test so your normal project can build successfully again.
+11.3 Verify the failure email
+1. Wait for the failed build to finish.
+2. Open Gmail.
+3. Check for a failure notification.
+4. Verify that the email contains the Jenkins job/build information.
+
+
+
+
+
+
+
+
+testautomationu.applitools.com
+
+
+Expected result: Jenkins sends an email when the build fails.
+
+If your job uses a Pipeline rather than a Freestyle project, the manual's Post-build Actions instructions may not be available. The Email Extension Plugin can also be configured inside a Pipeline using its emailext step, but use the configuration appropriate to your job type.
