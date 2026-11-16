@@ -1,0 +1,1248 @@
+DevOps Practical Viva – Scenario-Based Questions & Answers
+These questions cover all 8 experiments you mentioned. I've included real situations, likely examiner questions, and direct answers so you can understand why a command or tool is used instead of simply memorising it.
+
+Study the answers in order. The ⭐ questions are particularly important.
+1. Docker Compose
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+8
+
+
+
+
+
+
+
+
+
+
+
+Q1. Your application requires a frontend, backend and database. How will you run all three together?
+Answer: I will use Docker Compose. It allows me to define multiple services in a single YAML file and start them together.
+docker compose up -d
+
+
+- Frontend runs in one container.
+- Backend runs in another container.
+- Database runs in another container.
+Q2. Why do we use Docker Compose instead of running individual Docker commands?
+Answer: Managing multiple containers individually is difficult. Docker Compose allows us to configure and manage all services using one YAML file.
+Q3. What is a service in Docker Compose?
+Answer: A service is a definition of an application component in the Compose YAML file.
+
+For example:
+- frontend
+- backend
+- database
+Each service can create and manage one or more containers.
+Q4. Your backend starts before the database. The backend cannot connect to the database. What will you do?
+Answer: I can use depends_on to specify the startup dependency.
+services:
+  backend:
+    image: my-backend
+    depends_on:
+      - db
+
+  db:
+    image: mysql
+
+
+This controls startup order, but it does not guarantee that MySQL is ready to accept connections. For that, I can configure a health check and use a readiness-aware dependency.
+Q5. Your database container is deleted, and you lose all database records. Why?
+Answer: The data was stored inside the container's writable filesystem rather than in persistent storage.
+
+I should use a Docker volume to preserve database data.
+volumes:
+  db-data:
+
+
+Q6. How do containers communicate with each other in Docker Compose?
+Answer: Docker Compose creates a default network. Containers can communicate using their service names.
+
+For example:
+Backend connects to: db:3306
+
+
+Here, db is the database service name.
+Q7. How will you check whether all Compose containers are running?
+docker compose ps
+
+
+It displays container names, status, ports and services.
+Q8. You want to stop and remove all containers and networks. Which command will you use?
+docker compose down
+
+
+If you also want to remove associated Compose volumes:
+docker compose down -v
+
+
+Be careful: -v deletes the associated volume data.
+Q9. What is the difference between docker compose up and docker compose up -d?
+Command	Meaning
+docker compose up	Runs in foreground and displays logs
+docker compose up -d	Runs in detached/background mode
+
+Q10. Your container is running, but you cannot access the application through your browser. What could be the reason?
+Answer:
+1. Port mapping may be missing.
+2. The application may not be listening on the expected port.
+3. The application may have crashed internally.
+4. Firewall rules may block access.
+Example:
+docker run -d -p 8080:80 nginx
+
+
+Here, host port 8080 is mapped to container port 80.
+
+2. Jenkins Scripted Pipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+7
+
+
+
+
+
+
+
+
+
+
+
+Q1. Your organisation wants to automate build, test and deployment. Which Jenkins feature will you use?
+Answer: Jenkins Pipeline. It allows us to define a sequence of automated stages.
+Q2. What is a Scripted Pipeline?
+Answer: A Scripted Pipeline is a Jenkins pipeline written using Groovy scripting syntax. It provides flexibility and programmatic control over the build process.
+Q3. What is the purpose of node in a Scripted Pipeline?
+node {
+    // Pipeline steps
+}
+
+
+Answer: node allocates a Jenkins agent (or executor on the controller) where the pipeline steps are executed.
+Q4. What is the purpose of stage?
+stage('Build') {
+    echo 'Building application'
+}
+
+
+Answer: A stage represents a logical phase of the pipeline, such as Build, Test or Deploy.
+Q5. Your build is successful, but testing fails. What happens?
+Answer: The pipeline reports a failure at the Test stage. Subsequent stages normally do not execute unless the pipeline is specifically configured to continue.
+Q6. What is the purpose of echo?
+Answer: It prints messages in the Jenkins console output.
+Q7. What is the difference between sh and bat?
+sh	bat
+Executes shell commands	Executes Windows batch commands
+Used on Linux/Unix agents	Used on Windows agents
+
+Example:
+sh 'mvn clean package'
+
+
+bat 'mvn clean package'
+
+
+Q8. What happens if a stage fails?
+Answer: The pipeline generally stops executing subsequent stages and marks the build as failed, unless failure handling is configured.
+Q9. Where do you write a Scripted Pipeline?
+Answer: It can be written directly in the Jenkins Pipeline script configuration or stored in a Jenkinsfile in the source code repository.
+Q10. Why do we use try-catch in a Scripted Pipeline?
+Answer: To handle errors and control what happens when a pipeline step fails.
+
+Example:
+node {
+    try {
+        stage('Build') {
+            echo 'Building'
+        }
+    } catch (error) {
+        echo 'Build failed'
+        throw error
+    }
+}
+
+
+
+3. Jenkins Freestyle Project and Pipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6
+
+
+
+
+
+
+
+
+
+
+
+Q1. Your teacher asks you to create a Jenkins job that downloads code from GitHub and builds a Maven project. Which project will you create?
+Answer: I can create a Freestyle Project and configure:
+1. Source Code Management – Git.
+2. Repository URL.
+3. Build Triggers if required.
+4. Build Steps – Invoke top-level Maven targets or execute shell commands.
+5. Build the project.
+Q2. What is a Freestyle Project?
+Answer: A Freestyle Project is a Jenkins job that allows us to configure source code management, build triggers, build steps and post-build actions through the Jenkins graphical interface.
+Q3. What is the difference between Freestyle and Pipeline?
+Freestyle	Pipeline
+Mainly configured through GUI	Defined using code
+Suitable for simpler jobs	Suitable for complex workflows
+Build steps configured manually	Build stages written in a pipeline script
+Configuration can be harder to version-control	Jenkinsfile can be stored in Git
+
+Q4. Your teacher asks you to execute multiple stages: Build, Test and Deploy. Which is better?
+Answer: Jenkins Pipeline is better because it supports multiple stages and allows the entire workflow to be defined as code.
+Q5. What is Source Code Management (SCM) in Jenkins?
+Answer: SCM allows Jenkins to retrieve source code from repositories such as GitHub.
+Q6. What is a build step?
+Answer: A build step is an operation Jenkins performs during a job, such as compiling code, running tests or packaging an application.
+Q7. What is a post-build action?
+Answer: It is an action executed after the main build steps, such as archiving artifacts, publishing test results or sending notifications.
+Q8. Your Jenkins build fails because Maven is not recognised. What will you check?
+Answer:
+- Check whether Maven is installed.
+- Check the MAVEN_HOME configuration if applicable.
+- Check whether Maven's bin directory is in the system PATH.
+- Configure Maven in Jenkins Global Tool Configuration if using a managed installation.
+Verify with:
+mvn -version
+
+
+
+4. Jenkins CI/CD with Git Webhooks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+10
+
+
+
+
+
+
+
+
+
+
+
+Q1. ⭐ A developer pushes new code to GitHub. You want Jenkins to build the project automatically. How will you achieve this?
+Answer: I will configure a GitHub webhook.
+
+Workflow:
+1. Developer pushes code to GitHub.
+2. GitHub sends a webhook event to Jenkins.
+3. Jenkins receives the notification.
+4. Jenkins starts the configured build.
+5. Jenkins builds and tests the code.
+Q2. What is a webhook?
+Answer: A webhook is an HTTP callback that sends an automatic notification from one application to another when a specific event occurs.
+
+Example: GitHub sends a notification to Jenkins whenever code is pushed.
+Q3. Why do we use webhooks instead of manually building the project?
+Answer: Webhooks automate the build process. Developers do not need to manually trigger Jenkins after every code push.
+Q4. What is the purpose of the GitHub webhook URL?
+Answer: It tells GitHub where to send the webhook notification.
+
+For a typical Jenkins GitHub integration, the endpoint is:
+http://JENKINS-IP:8080/github-webhook/
+
+
+The actual address must be reachable from GitHub. localhost will not work for GitHub's servers.
+Q5. Your webhook is configured, but Jenkins is not triggering builds. What will you check?
+Answer:
+1. Check whether the webhook URL is correct.
+2. Check whether Jenkins is running.
+3. Check network accessibility and firewall rules.
+4. Check whether the GitHub plugin is installed.
+5. Check whether the GitHub hook trigger is enabled in the Jenkins job.
+6. Check GitHub webhook delivery history for HTTP errors.
+Q6. What is the difference between polling SCM and a webhook?
+Poll SCM	Webhook
+Jenkins periodically checks GitHub	GitHub notifies Jenkins when an event occurs
+Repeated checking	Event-based notification
+May introduce a delay	Usually triggers more quickly
+
+Q7. What is CI?
+Answer: Continuous Integration is the practice of frequently integrating code changes into a shared repository and automatically building and testing them.
+Q8. What is CD?
+Answer: Continuous Delivery or Continuous Deployment.
+- Continuous Delivery: Code is automatically built and tested, and is ready for release. Production release may require approval.
+- Continuous Deployment: Successfully tested changes are automatically deployed to production.
+Q9. Your Jenkins build succeeds, but you do not receive an email notification. What could be the reason?
+Answer:
+- SMTP settings are incorrect.
+- Email plugin is missing or not configured.
+- Recipient email address is incorrect.
+- Gmail authentication or app password is incorrect.
+- Notification step is missing from the job.
+Q10. What is a Git repository?
+Answer: A Git repository is a storage location that maintains source code and its version history.
+
+5. Kubernetes and Minikube
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+9
+
+
+
+
+
+
+
+
+
+
+
+Q1. ⭐ Your application has multiple containers. You want to manage, scale and restart them automatically. Which tool will you use?
+Answer: Kubernetes. It is a container orchestration platform used to automate deployment, scaling and management of containerized applications.
+Q2. What is Minikube?
+Answer: Minikube is a tool that runs a local Kubernetes cluster, usually with a single node, on your personal computer.
+
+It is useful for learning and testing Kubernetes.
+Q3. What is kubectl?
+Answer: kubectl is the command-line tool used to communicate with and manage a Kubernetes cluster.
+
+Examples:
+kubectl get nodes
+kubectl get pods
+kubectl get deployments
+
+
+Q4. What is a Pod?
+Answer: A Pod is the smallest deployable unit in Kubernetes. It contains one or more containers that share network resources and can share storage.
+Q5. What is a Deployment?
+Answer: A Deployment manages ReplicaSets and ensures that the desired number of Pod replicas are running. It also supports rolling updates and rollbacks.
+Q6. ⭐ Your application has 3 Pods. One Pod crashes. What happens?
+Answer: The ReplicaSet detects that the number of running Pods has decreased and creates a replacement Pod to maintain the desired number of replicas.
+Q7. What is a Node?
+Answer: A Node is a physical or virtual machine in a Kubernetes cluster that runs Pods.
+Q8. What is a Kubernetes cluster?
+Answer: A cluster is a group of one or more Nodes managed by Kubernetes.
+Q9. What is the difference between a Pod and a Deployment?
+Pod	Deployment
+Runs one or more containers	Manages Pods through ReplicaSets
+Smallest deployable unit	Higher-level management resource
+Does not independently maintain replicas	Maintains desired replicas
+
+Q10. Your application is running, but users cannot access it. What will you use?
+Answer: I will create a Kubernetes Service to expose the application and provide a stable network endpoint.
+
+Common service types:
+- ClusterIP – Internal cluster access.
+- NodePort – Exposes a port on cluster nodes.
+- LoadBalancer – Exposes the application through an external load balancer, when supported.
+Q11. What is a YAML file in Kubernetes?
+Answer: YAML is a human-readable data serialization format used to define Kubernetes resources and their configurations.
+Q12. How do you apply a Kubernetes YAML file?
+kubectl apply -f deployment.yaml
+
+
+Q13. How do you check running Pods?
+kubectl get pods
+
+
+Q14. How do you delete a Deployment?
+kubectl delete deployment backend
+
+
+Q15. What is scaling in Kubernetes?
+Answer: Scaling means increasing or decreasing the number of application replicas.
+
+Example:
+kubectl scale deployment backend --replicas=5
+
+
+This sets the desired number of backend Pods to five.
+Q16. What happens if you delete a Pod managed by a Deployment?
+Answer: The Deployment's ReplicaSet creates a replacement Pod to maintain the desired replica count.
+Q17. How do you access Minikube's dashboard?
+minikube dashboard
+
+
+It opens a graphical interface to inspect Kubernetes resources.
+
+6. Nagios Monitoring
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6
+
+
+
+
+
+
+
+
+
+
+
+Q1. ⭐ Your server suddenly goes down. You want to receive an alert immediately. Which tool will you use?
+Answer: Nagios. It is a monitoring tool used to monitor servers, networks and applications and notify administrators when problems occur.
+Q2. What is Nagios?
+Answer: Nagios is an open-source monitoring system used to monitor the availability and health of IT infrastructure.
+Q3. What is the difference between host and service in Nagios?
+Host	Service
+Represents a machine or network device	Represents a specific resource or function
+Example: Ubuntu server	Example: HTTP, SSH, disk usage
+
+Q4. Your web server is running, but the website is not responding. What will Nagios monitor?
+Answer: Nagios can monitor the HTTP service to check whether the website is responding, rather than checking only whether the server is reachable.
+Q5. What are the four common Nagios states?
+State	Meaning
+OK	Everything is working
+WARNING	Something requires attention
+CRITICAL	Serious problem
+UNKNOWN	Monitoring result cannot be determined
+
+Q6. What happens when a service becomes critical?
+Answer: Nagios changes its service state to CRITICAL and can send notifications to administrators based on configured notification rules.
+Q7. What is NRPE?
+Answer: NRPE stands for Nagios Remote Plugin Executor. It allows Nagios to execute monitoring plugins on remote Linux/Unix machines.
+Q8. What is the purpose of Nagios plugins?
+Answer: Plugins perform actual monitoring checks, such as checking disk space, CPU usage, memory usage, HTTP availability and SSH availability.
+Q9. Your Nagios dashboard shows a WARNING status for disk usage. What does it mean?
+Answer: Disk usage has crossed the configured warning threshold. The administrator should investigate before it reaches the critical threshold.
+Q10. What is the difference between Nagios and Kubernetes?
+Nagios	Kubernetes
+Monitoring tool	Container orchestration platform
+Monitors system health	Manages containerized applications
+Generates alerts	Deploys, scales and maintains applications
+
+Q11. Why do we use monitoring?
+Answer: Monitoring helps detect failures early, reduce downtime and maintain application availability.
+
+7. Cloud Deployment Using AWS EC2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+7
+
+
+
+
+
+
+
+
+
+
+
+Q1. ⭐ Your application is running on your laptop. You want users anywhere in the world to access it. What will you do?
+Answer: I will deploy the application to a cloud server using AWS EC2.
+
+Steps:
+1. Create an EC2 instance.
+2. Select an operating system such as Ubuntu.
+3. Configure a key pair.
+4. Configure the Security Group.
+5. Connect using SSH.
+6. Install the required runtime and dependencies.
+7. Upload or clone the application.
+8. Start the application.
+9. Access it using the public IP address or domain.
+Q2. What is AWS?
+Answer: AWS (Amazon Web Services) is a cloud computing platform that provides services such as computing, storage, databases, networking and hosting.
+Q3. What is EC2?
+Answer: EC2 stands for Elastic Compute Cloud. It provides virtual servers called instances that can run applications in the cloud.
+Q4. Why do we use EC2 instead of our personal laptop?
+Answer: EC2 provides cloud-hosted computing resources that can be accessed remotely. We can deploy applications without keeping our personal laptops switched on.
+Q5. What is an EC2 instance?
+Answer: An EC2 instance is a virtual machine running in AWS.
+Q6. What is a Key Pair?
+Answer: A Key Pair consists of a public key and a private key. It is used to authenticate securely when connecting to an EC2 instance using SSH.
+
+Example:
+ssh -i my-key.pem ubuntu@PUBLIC-IP
+
+
+Q7. What is SSH?
+Answer: SSH stands for Secure Shell. It is a protocol used to securely access and manage remote computers.
+Q8. What is a Security Group?
+Answer: A Security Group is a virtual firewall that controls inbound and outbound traffic for an EC2 instance.
+
+For example:
+Port	Purpose
+22	SSH access
+80	HTTP
+443	HTTPS
+8080	Example application port
+
+Q9. ⭐ Your application is running on EC2, but you cannot access it using the public IP. What will you check?
+Answer:
+1. Check whether the EC2 instance is running.
+2. Check whether the application is running.
+3. Check whether the application listens on the correct port.
+4. Check the Security Group inbound rules.
+5. Check the Ubuntu firewall, if enabled.
+6. Check whether the application is listening on an externally reachable interface, such as 0.0.0.0, instead of only 127.0.0.1.
+Q10. What is a Public IP address?
+Answer: A Public IP address is an IP address used to communicate with a resource over the internet, subject to networking and firewall configuration.
+Q11. What is the difference between Public IP and Private IP?
+Public IP	Private IP
+Used for internet communication	Used within private networks
+Can be reachable from the internet if allowed	Not directly reachable from the public internet
+Example: EC2 public IPv4 address	Example: 172.31.x.x
+
+Q12. What is an AMI?
+Answer: AMI stands for Amazon Machine Image. It is a template containing the operating system and other software configuration used to launch EC2 instances.
+Q13. What is an instance type?
+Answer: An instance type defines the computing resources available to an EC2 instance, such as CPU, memory and networking capacity.
+Q14. Why do we use Ubuntu in EC2?
+Answer: Ubuntu is a Linux operating system that supports application hosting and provides package managers and command-line tools for installing dependencies and managing applications.
+Q15. How do you install Nginx on an Ubuntu EC2 instance?
+sudo apt update
+sudo apt install nginx -y
+
+
+Start Nginx:
+sudo systemctl start nginx
+
+
+Check status:
+sudo systemctl status nginx
+
+
+Q16. How do you stop an EC2 instance?
+Answer: From the AWS EC2 console, select the instance and choose Instance State → Stop instance.
+
+Stopping an instance generally stops compute charges, but storage and certain other resources may continue to incur charges.
+Q17. What is the difference between stopping and terminating an EC2 instance?
+Stop	Terminate
+Shuts down the instance	Permanently deletes the instance
+Can be started again	Cannot be restarted
+EBS data generally remains	Root volume may be deleted depending on configuration
+
+Q18. Your SSH connection is failing. What will you check?
+Answer:
+- EC2 instance is running.
+- Public IP address is correct.
+- Port 22 is allowed in the Security Group.
+- Correct username is used (ubuntu for many Ubuntu AMIs).
+- Correct private key file is used.
+- Network connection and routing are working.
+Q19. Why should we stop an EC2 instance after completing the lab?
+Answer: To avoid unnecessary compute charges when the instance is not needed. Remember that stopping does not necessarily eliminate all AWS charges.
+
+8. Mixed Scenario-Based Questions
+These are particularly useful because examiners often combine two or more experiments into one situation.
+Q1. You have developed an application using Docker. Now you want to deploy it to AWS. What will you do?
+Answer:
+1. Create a Docker image.
+2. Push the image to Docker Hub or Amazon ECR.
+3. Create an AWS EC2 instance.
+4. Install Docker on EC2.
+5. Pull the image.
+6. Run the container.
+7. Configure the required ports in the Security Group.
+8. Access the application using the EC2 public IP.
+Q2. You want to automatically deploy your application to EC2 whenever you push code to GitHub. What tools will you use?
+Answer:
+- GitHub – Source code management.
+- Webhook – Notifies Jenkins about code changes.
+- Jenkins – Automates build and testing.
+- Docker – Packages the application, if required.
+- AWS EC2 – Hosts the application.
+Q3. Your application has multiple microservices. Which tool will you use to manage them at scale?
+Answer: Kubernetes, because it supports deployment, scaling, service discovery and self-healing.
+Q4. Your application is running on EC2, but you want to monitor CPU, disk and HTTP availability. Which tool will you use?
+Answer: Nagios.
+Q5. Your application has a frontend and backend, and both require a database. How will you manage all these containers?
+Answer: Docker Compose, using services, networks and volumes.
+Q6. Your Jenkins pipeline builds successfully, but the deployment stage fails. How will you troubleshoot?
+Answer:
+1. Open Jenkins Console Output.
+2. Identify the failed command.
+3. Check SSH credentials and permissions.
+4. Check whether the destination server is reachable.
+5. Check whether the required deployment port is accessible.
+6. Check the application logs on the server.
+Q7. Your Kubernetes Deployment requires 5 replicas, but only 3 Pods are running. What will you investigate?
+Answer:
+- Check Pod status using kubectl get pods.
+- Check events using kubectl describe pod.
+- Check whether sufficient CPU and memory are available.
+- Check image-pull errors and scheduling constraints.
+- Check Deployment and ReplicaSet status.
+Q8. Your Docker container works on your laptop but fails on another computer. Why?
+Answer: Possible reasons include:
+- Different environment variables.
+- Missing dependencies.
+- Incorrect image or version.
+- Port conflicts.
+- Different configuration.
+- Platform or architecture incompatibility.
+Using a Docker image and a proper configuration can improve consistency across environments.
+Q9. Your website is accessible using the EC2 public IP, but Nagios reports the HTTP service as CRITICAL. What will you check?
+Answer: I will check Nagios's HTTP monitoring configuration, target IP/hostname, port, URL path, network access and plugin output. The application may be working while the monitoring check is incorrectly configured.
+Q10. What is the complete DevOps workflow from writing code to monitoring a deployed application?
+Answer:
+Developer writes code
+
+Application development
+
+GitHub
+
+Stores source code
+
+Webhook
+
+Notifies Jenkins of changes
+
+Jenkins
+
+Builds and tests application
+
+Docker
+
+Packages application into containers
+
+AWS EC2 / Kubernetes
+
+Deploys and runs the application
+
+Nagios
+
+Monitors application and infrastructure
+
+
+
+9. Last-Minute Rapid-Fire Viva Revision
+Memorise these one-line answers. Examiners frequently ask them as follow-up questions.
+Question	Answer
+What is Docker?	Containerization platform
+What is Docker Compose?	Tool for managing multi-container applications
+What is YAML?	Human-readable data serialization format
+What is a volume?	Persistent storage for container data
+What is a network?	Allows containers to communicate
+What is depends_on?	Defines service startup dependencies
+What is Jenkins?	Automation server
+What is a Jenkins Pipeline?	Automated sequence of build stages
+What is Groovy?	Programming language used in Scripted Pipelines
+What is a Freestyle Project?	GUI-configured Jenkins job
+What is CI?	Continuous Integration
+What is CD?	Continuous Delivery or Continuous Deployment
+What is a webhook?	Event-based HTTP notification
+What is Kubernetes?	Container orchestration platform
+What is Minikube?	Tool for running a local Kubernetes cluster
+What is kubectl?	Kubernetes command-line tool
+What is a Pod?	Smallest deployable Kubernetes unit
+What is a Deployment?	Manages ReplicaSets and Pod replicas
+What is a Node?	Machine that runs Kubernetes Pods
+What is Nagios?	Infrastructure monitoring tool
+What is NRPE?	Executes monitoring checks on remote machines
+What is EC2?	AWS virtual server service
+What is AMI?	Template for launching EC2 instances
+What is SSH?	Secure remote access protocol
+What is a Security Group?	Virtual firewall for AWS resources
+What is Nginx?	Web server and reverse proxy
+
+
+10. Test Yourself – Examiner Mode
+Don't just read the answers. Try answering these without looking above. These questions test whether you can apply the concepts.
+8 scenario questions
+0/8 answered
+
+1. Your backend cannot connect to the database because it starts too early. Which Compose feature helps define startup order?
+
+Volumes
+
+depends_on
+
+Port mapping
+
+docker compose ps
+
+
+
+2. A developer pushes code to GitHub. Jenkins should automatically start a build. What do you configure?
+
+Docker volume
+
+Kubernetes Deployment
+
+GitHub webhook
+
+Nagios plugin
+
+
+
+3. One of your 3 Kubernetes Pods crashes. Which resource helps restore the desired number of replicas?
+
+Service
+
+ReplicaSet
+
+NodePort
+
+ConfigMap
+
+
+
+4. Your EC2 application is running, but port 8080 is not accessible from the internet. What should you check first?
+
+AMI name
+
+Security Group inbound rule
+
+Docker image name
+
+Jenkins stage
+
+
+
+5. Nagios reports that a website is unavailable, even though the server is reachable. What should you investigate?
+
+HTTP service check
+
+Docker volume
+
+Kubernetes replica count
+
+Git commit message
+
+
+
+6. You want to run frontend, backend and database containers using one configuration file. Which tool is suitable?
+
+Nagios
+
+Docker Compose
+
+SSH
+
+Git
+
+
+
+7. Which Jenkins job type is generally configured using a Groovy Jenkinsfile with stages?
+
+Freestyle only
+
+Pipeline
+
+Nagios job
+
+Docker volume
+
+
+
+8. You want to test Kubernetes locally without creating a cloud cluster. Which tool can you use?
+
+Minikube
+
+EC2
+
+Nginx
+
+NRPE
+
+
+Submit answers
+My advice for your practical viva: Don't memorise only definitions. For every experiment, be able to explain these four things:
+1. Why are we using this tool?
+2. What does each important command do?
+3. How does the experiment work from beginning to end?
+4. What would you check if it fails?
+
+
+
+
+
+
+
+
+
+
+Configure Java, Maven and Docker Hub in Jenkins
+Since you're using Windows 11 with Jenkins, I'll explain the configuration through the Jenkins dashboard, step by step.
+
+We need to configure three things:
+1. Java (JDK) – Jenkins needs Java to compile and run Java applications.
+2. Maven – Jenkins uses Maven to build and package Java projects.
+3. Docker Hub – Jenkins uses Docker Hub credentials to log in and push Docker images.
+Overall workflow
+Jenkins Dashboard
+
+Java
+
+JDK
+
+
+Maven
+
+Build tool
+
+
+Docker Hub
+
+Image registry
+
+
+
+Build → Package → Push Docker Image
+
+
+Step 1: Configure Java (JDK)
+Your existing installation can be used
+You previously installed Java 25 on your laptop, so you don't need to install it again if it is still available.
+
+1. Find your Java installation path.
+
+Open PowerShell and execute:
+java -version
+where.exe java
+echo $env:JAVA_HOME
+
+
+Your previously configured JDK path was:
+C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot
+
+
+2. Open Jenkins.
+1. Open Jenkins in your browser.
+2. Click Manage Jenkins.
+3. Click Tools (previously called Global Tool Configuration).
+4. Find the JDK installations section.
+5. Click Add JDK.
+3. Configure these fields.
+
+
+
+
+
+
+
+
+oreilly.com
+
+
+Field	Value
+Name	JDK25
+Install automatically	Uncheck
+JAVA_HOME	C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot
+
+Click Save.
+
+Important: Enter the JDK folder, not its bin folder.
+
+Step 2: Configure Maven
+You previously installed Maven 3.9.16.
+
+1. Verify Maven installation.
+
+Open PowerShell:
+mvn -version
+where.exe mvn
+
+
+Your previous Maven installation path was:
+C:\Program Files\Apache\maven
+
+
+2. Open Jenkins:
+1. Manage Jenkins.
+2. Tools.
+3. Find Maven installations.
+4. Click Add Maven.
+
+
+
+
+
+
+
+
+tpointtech.com
+
+
+3. Enter the following:
+Field	Value
+Name	Maven3.9.16
+Install automatically	Uncheck
+MAVEN_HOME	C:\Program Files\Apache\maven
+
+Click Save.
+
+Remember: Enter the Maven installation folder, not the bin folder.
+
+Step 3: Configure Docker Hub credentials
+This is slightly different from Java and Maven.
+
+Java and Maven are configured under Tools, whereas Docker Hub login details are stored under Jenkins Credentials.
+
+1. First, verify Docker is installed.
+
+Open PowerShell:
+docker --version
+docker info
+
+
+Make sure Docker Desktop is running.
+
+2. Generate a Docker Hub access token.
+
+
+
+
+
+
+
+
+docker.awsworkshop.io
+
+
+1. Open Docker Hub.
+2. Log in.
+3. Open Account Settings.
+4. Go to Personal access tokens.
+5. Click Generate new token.
+6. Give it a name, such as Jenkins.
+7. Select appropriate permissions. For pushing images, Read & Write is needed.
+8. Generate and copy the token.
+Keep this token private. Use it instead of your Docker Hub account password.
+
+3. Add credentials to Jenkins.
+1. Open Jenkins Dashboard.
+2. Click Manage Jenkins.
+3. Click Credentials.
+4. Open System.
+5. Open Global credentials (unrestricted).
+6. Click Add Credentials.
+
+
+
+
+
+
+
+
+notes.kodekloud.com
+
+
+Enter:
+Field	Value
+Kind	Username with password
+Username	Your Docker Hub username
+Password	Your Docker Hub access token
+ID	dockerhub-creds
+Description	Docker Hub Credentials
+
+Click Create.
+Docker Hub credentials configured
+Now Jenkins can refer to these credentials using the ID dockerhub-creds.
+
+Step 4: Install required Jenkins plugins
+Go to:
+
+Manage Jenkins → Plugins → Available plugins
+
+Search for and install:
+Plugin	Purpose
+Docker Pipeline	Build and push Docker images from Pipeline
+Pipeline	Create Jenkins Pipeline jobs
+Credentials Binding	Access stored credentials securely
+Git	Download source code from GitHub
+
+Some may already be installed.
+
+Restart Jenkins if the plugin installation requires it.
+
+Step 5: Verify all configurations
+Create a temporary Pipeline job.
+1. Click New Item.
+2. Enter Tool_Test.
+3. Select Pipeline.
+4. Click OK.
+5. Scroll to Pipeline script.
+6. Paste the following:
+
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK25'
+        maven 'Maven3.9.16'
+    }
+
+    stages {
+        stage('Check Java') {
+            steps {
+                bat 'java -version'
+            }
+        }
+
+        stage('Check Maven') {
+            steps {
+                bat 'mvn -version'
+            }
+        }
+
+        stage('Check Docker') {
+            steps {
+                bat 'docker --version'
+            }
+        }
+    }
+}
+
+
+
+Click Save → Build Now.
+
+Open Console Output.
+
+Expected results:
+- Java version should be displayed.
+- Maven version should be displayed.
+- Docker version should be displayed.
+If Docker fails here, check whether the Jenkins agent's Windows account can access Docker Desktop and the Docker daemon. Running Docker successfully in your personal PowerShell does not automatically guarantee Jenkins can access it.
+
+Step 6: Test the complete Docker Hub integration
+Now let's understand why we configured everything.
+
+Suppose you have a Java Maven application containing:
+MyApplication/
+│
+├── pom.xml
+├── Dockerfile
+└── src/
+    └── main/
+        └── java/
+
+
+Your Dockerfile could look like this:
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+
+
+Create a Docker Hub repository named my-java-app before pushing.
+
+Now use this Pipeline script. Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username.
+
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK25'
+        maven 'Maven3.9.16'
+    }
+
+    stages {
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean package'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build(
+                        "YOUR_DOCKERHUB_USERNAME/my-java-app:${BUILD_NUMBER}"
+                    )
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry(
+                        'https://index.docker.io/v1/',
+                        'dockerhub-creds'
+                    ) {
+                        docker.image(
+                            "YOUR_DOCKERHUB_USERNAME/my-java-app:${BUILD_NUMBER}"
+                        ).push()
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+This requires the Docker Pipeline plugin, an accessible Docker daemon and a Dockerfile in your workspace.
+
+What happens?
+1. Build
+   
+   Maven compiles your Java application and generates a JAR file inside target/.
+2. Build Docker Image
+   
+   Docker uses the Dockerfile and generated JAR to create an image.
+3. Login to Docker Hub
+   
+   Jenkins retrieves the stored credentials using dockerhub-creds.
+4. Push Image
+   
+   Jenkins uploads the Docker image to your Docker Hub repository.
+
+Final revision – What did we configure?
+Component	Jenkins location	Purpose
+Java	Manage Jenkins → Tools	Compile Java code
+Maven	Manage Jenkins → Tools	Build Java project
+Docker Hub	Manage Jenkins → Credentials	Authenticate with Docker Hub
+Docker Pipeline	Manage Jenkins → Plugins	Build and push images using Pipeline
+
+Official references for further reading:
+- Jenkins – Managing Tools
+- Jenkins – Using Docker with Pipeline
+- Jenkins – Build a Java App with Maven
+Let's do the actual configuration
+Start with Step 1: Java.
+
+One important detail: Jenkins itself may run on one Java version while your application is compiled with another. Also, your Maven project must target a Java version compatible with its dependencies and deployment environment.
+
+Once you've configured Java, Maven and Docker Hub, you can use the same setup for your Freestyle and Pipeline practicals.
