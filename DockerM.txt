@@ -1,0 +1,329 @@
+There are 5 practical tasks in this document:
+1. Run multiple interdependent services (Nginx + PostgreSQL).
+2. Add Redis and configure service dependencies.
+3. Deploy the same Compose setup on another machine.
+4. Configure networking and persistent storage.
+5. Build and modify a Flask application using Docker Compose.
+Important: You don't need to perform five separate experiments from scratch. We'll build on the same compose-lab folder and modify the configuration as we progress.
+Experiment 1 – Nginx + PostgreSQL
+Start here
+Step 1. Create project folder
+Open CMD or PowerShell:
+mkdir compose-lab
+cd compose-lab
+
+
+Step 2. Create docker-compose.yml
+notepad docker-compose.yml
+
+
+Paste this content:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+
+
+Save and close Notepad.
+Step 3. Start both containers
+docker compose up -d
+
+
+Step 4. Check containers
+docker compose ps
+
+
+Step 5. Open browser
+Visit:
+
+http://localhost:8080
+Expected output
+
+
+
+
+
+
+
+
+noob2poweruser.com
+
+
+You should see the Nginx welcome page. PostgreSQL should be running in the background.
+
+Experiment 2 – Add Redis cache
+We will modify the same YAML file.
+Step 1. Open file
+notepad docker-compose.yml
+
+
+Replace the contents with:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+  redis:
+    image: redis:alpine
+
+
+
+Step 2. Restart Compose
+docker compose up -d
+
+
+Step 3. Check all services
+docker compose ps
+
+
+Expected output
+Three running services:
+- web (Nginx)
+- db (PostgreSQL)
+- redis (Redis)
+Remember: depends_on controls startup order. It does not guarantee that Redis is fully ready to accept connections.
+
+Experiment 3 – Deploy across different machines
+This task demonstrates portability: the same Docker Compose project can run on another computer.
+Step 1. Go back to parent directory
+Open another PowerShell window:
+cd ..
+
+
+Step 2. Zip the project folder
+Compress-Archive -Path .\compose-lab -DestinationPath .\compose-lab.zip -Force
+
+
+Step 3. Transfer
+Transfer compose-lab.zip to another computer using USB, Google Drive, etc.
+Step 4. On the other computer
+Extract the ZIP and open PowerShell inside the extracted folder.
+cd compose-lab
+docker compose up -d
+
+
+Step 5. Verify
+docker compose ps
+
+
+Open:
+
+http://localhost:8080
+
+Expected: Nginx welcome page and PostgreSQL running.
+
+Experiment 4 – Networking and Persistent Storage
+This is important. You will learn how to preserve database data even after removing containers.
+Step 1. Open Compose file
+notepad docker-compose.yml
+
+
+Replace everything with:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+
+
+
+Step 2. Start containers
+docker compose up -d
+
+
+Step 3. Insert data into PostgreSQL
+Enter PostgreSQL:
+docker compose exec db psql -U demo -d demo_db
+
+
+Create a table:
+CREATE TABLE students (
+    id INT,
+    name VARCHAR(50)
+);
+
+
+Insert data:
+INSERT INTO students VALUES (1, 'Anas');
+
+
+Display data:
+SELECT * FROM students;
+
+
+Expected output:
+ id | name
+----+-------
+  1 | Anas
+
+
+Exit:
+\q
+
+
+Step 4. Remove containers
+docker compose down
+
+
+Step 5. Start everything again
+docker compose up -d
+
+
+Step 6. Verify persistent data
+docker compose exec db psql -U demo -d demo_db
+
+
+Execute:
+SELECT * FROM students;
+
+
+Expected output
+Your previously inserted student record should still exist!
+
+Why? Because PostgreSQL data is stored in a named Docker volume called db-data, not just inside the container.
+
+Important: Don't execute docker compose down -v here. The -v flag deletes the named volume and its stored data.
+
+Experiment 5 – Flask + Docker Compose
+Now we'll create a simple Python Flask application and run it through Docker Compose.
+Step 1. Create app.py
+Inside your existing compose-lab folder:
+notepad app.py
+
+
+Paste:
+from flask import Flaskapp = Flask(__name__)@app.route("/")def home():    return "Hello from Flask + Docker!"if __name__ == "__main__":    app.run(host="0.0.0.0", port=5000)
+
+
+
+Save it.
+Step 2. Create Dockerfile
+notepad Dockerfile
+
+
+Paste:
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY app.py /app/
+
+RUN pip install flask
+
+CMD ["python", "app.py"]
+
+
+
+Save it.
+Step 3. Update docker-compose.yml
+notepad docker-compose.yml
+
+
+Replace its contents with:
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+
+
+
+Step 4. Build and run
+docker compose up --build
+
+
+This builds your Flask image and starts both services.
+Step 5. Open browser
+http://localhost:5000
+Expected output
+Browser output
+Running
+
+Hello from Flask + Docker!
+
+
+Step 6. Modify application
+Open:
+notepad app.py
+
+
+Change the return statement:
+return "Hello Docker Compose!"
+
+
+
+Save.
+Step 7. Rebuild
+Open another terminal in the same folder:
+docker compose up --build -d
+
+
+Refresh:
+
+http://localhost:5000
+
+Now you should see:
+Hello Docker Compose!
+
+
+Step 8. Cleanup
+docker compose down

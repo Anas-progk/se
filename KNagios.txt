@@ -1,0 +1,184 @@
+give nagios configuration commands for cpu etc etc and all,for both cmd and powershell copiable ,1 for cmd and 1 for powershell
+
+Worked for 32s
+You want Nagios to monitor CPU, RAM, disk usage, swap, processes, users, and network connectivity, and display their statuses in the web dashboard.
+
+We'll configure your existing nagiosdemo Docker container.
+
+One important distinction:
+
+The default Nagios configuration already includes CPU load, disk, swap, processes, users and ping checks.
+
+We'll add a separate RAM monitoring service.
+
+These checks monitor the Nagios Linux container, not your entire Windows laptop. Monitoring Windows host resources requires installing a Windows monitoring agent. 
+
+GitHub
++1
+
+1. CMD – Complete copyable commands
+Windows Command Prompt
+Open CMD and paste the following commands.
+
+Step 1 – Ensure Nagios is running
+
+docker start nagiosdemo
+Step 2 – Create RAM monitoring configuration
+
+(
+echo define command {
+echo     command_name check_local_memory
+echo     command_line $USER1$/check_mem.pl -f -w $ARG1$ -c $ARG2$
+echo }
+echo.
+echo define service {
+echo     use local-service
+echo     host_name localhost
+echo     service_description Memory Usage
+echo     check_command check_local_memory!20!10
+echo }
+) > nagios-memory.cfg
+Step 3 – Copy configuration into Nagios
+
+docker cp nagios-memory.cfg nagiosdemo:/opt/nagios/etc/objects/extra-memory.cfg
+Step 4 – Enable the configuration
+
+docker exec nagiosdemo bash -lc "grep -q 'extra-memory.cfg' /opt/nagios/etc/nagios.cfg || echo 'cfg_file=/opt/nagios/etc/objects/extra-memory.cfg' >> /opt/nagios/etc/nagios.cfg"
+Step 5 – Validate configuration
+
+docker exec nagiosdemo /opt/nagios/bin/nagios -v /opt/nagios/etc/nagios.cfg
+Look for:
+
+Total Warnings: 0
+Total Errors: 0
+Step 6 – Restart Nagios
+
+docker restart nagiosdemo
+Step 7 – Delete temporary file
+
+del nagios-memory.cfg
+2. PowerShell – Complete copyable commands
+Windows PowerShell
+This does exactly the same configuration, but uses PowerShell syntax to create the configuration file.
+
+Copy and paste the entire block:
+
+
+# STEP 1: Start Nagios
+docker start nagiosdemo
+
+# STEP 2: Create RAM monitoring configuration
+$config = @'
+define command {
+    command_name check_local_memory
+    command_line $USER1$/check_mem.pl -f -w $ARG1$ -c $ARG2$
+}
+
+define service {
+    use local-service
+    host_name localhost
+    service_description Memory Usage
+    check_command check_local_memory!20!10
+}
+'@
+
+# STEP 3: Save configuration
+Set-Content -Path ".\nagios-memory.cfg" -Value $config -Encoding ASCII
+
+# STEP 4: Copy configuration into container
+docker cp .\nagios-memory.cfg nagiosdemo:/opt/nagios/etc/objects/extra-memory.cfg
+
+# STEP 5: Enable configuration
+docker exec nagiosdemo bash -lc "grep -q 'extra-memory.cfg' /opt/nagios/etc/nagios.cfg || echo 'cfg_file=/opt/nagios/etc/objects/extra-memory.cfg' >> /opt/nagios/etc/nagios.cfg"
+
+# STEP 6: Validate configuration
+docker exec nagiosdemo /opt/nagios/bin/nagios -v /opt/nagios/etc/nagios.cfg
+
+# STEP 7: Restart Nagios
+docker restart nagiosdemo
+
+# STEP 8: Delete temporary file
+Remove-Item .\nagios-memory.cfg
+
+3. What exactly will Nagios monitor?
+Open http://localhost:8888 and log in.
+
+Go to Current Status → Services.
+
+You should find the following checks in the default localhost configuration, plus the new Memory Usage service.
+
+Monitoring service
+
+What it checks
+
+Current Load
+
+CPU/system load
+
+Memory Usage
+
+Available RAM
+
+Root Partition
+
+Disk space
+
+Swap Usage
+
+Swap memory
+
+Total Processes
+
+Running processes
+
+Current Users
+
+Logged-in users
+
+PING
+
+Network connectivity
+
+The default localhost checks come from the image's Nagios sample configuration. 
+GitHub
++1
+
+4. Understanding warning and critical thresholds
+Our RAM configuration:
+
+check_local_memory!20!10
+Means:
+
+Warning: Free RAM falls below 20%.
+
+Critical: Free RAM falls below 10%.
+
+Nagios uses three important states:
+
+OK
+Normal
+
+WARNING
+Threshold crossed
+
+CRITICAL
+Serious issue
+
+5. Useful Nagios troubleshooting commands
+# Check Nagios container
+docker ps
+
+# View Nagios logs
+docker logs nagiosdemo
+
+# Follow logs continuously
+docker logs -f nagiosdemo
+
+# Check Nagios configuration
+docker exec nagiosdemo /opt/nagios/bin/nagios -v /opt/nagios/etc/nagios.cfg
+
+# Check available monitoring plugins
+docker exec nagiosdemo ls /opt/nagios/libexec
+
+# Restart Nagios
+docker restart nagiosdemo

@@ -1,0 +1,199 @@
+Step 1. Pull Redis image
+docker pull redis
+
+
+Step 2. Create and run container
+docker run --name my-redis -d redis
+
+
+Step 3. Check running containers
+docker ps
+
+
+Step 4. Enter Redis CLI
+docker exec -it my-redis redis-cli
+
+
+Now execute these Redis commands one by one:
+SET name "Alice"
+GET name
+
+
+Expected output:
+OK
+"Alice"
+
+
+Exit Redis:
+exit
+
+
+Step 5. Stop container
+docker stop my-redis
+
+
+Step 6. Restart container
+docker start my-redis
+
+
+Step 7. Remove container
+docker stop my-redis
+docker rm my-redis
+
+
+Step 8. Remove image
+docker rmi redis
+
+
+Experiment 1 completed
+
+Experiment 2 – Working with Dockerfile
+10–15 minutes
+Step 1. Create project folder
+Open CMD or PowerShell:
+mkdir C:\DockerProjects\Redis
+cd C:\DockerProjects\Redis
+
+
+Step 2. Create Dockerfile
+Create a file named exactly:
+
+Dockerfile
+
+No extension.
+
+Inside it, write:
+
+FROM redis:latest
+CMD ["redis-server"]
+
+
+
+Save the file.
+Step 3. Build Docker image
+docker build -t redisnew .
+
+
+Step 4. Run container
+docker run --name myredisnew -d redisnew
+
+
+Step 5. Check running containers
+docker ps
+
+
+Step 6. Stop container
+docker stop myredisnew
+
+
+Step 7. Login to Docker Hub
+docker login
+
+
+Enter your Docker Hub username and password when prompted.
+Step 8. Check all containers
+docker ps -a
+
+
+Step 9. Commit container into a new image
+First, get the container ID:
+docker ps -a
+
+
+Copy the ID of myredisnew.
+
+Now execute (replace CONTAINER_ID):
+docker commit CONTAINER_ID YOUR_USERNAME/redis1
+
+
+Example:
+docker commit abc123 yourusername/redis1
+
+
+Step 10. Check images
+docker images
+
+
+Step 11. Push image to Docker Hub
+docker push YOUR_USERNAME/redis1
+
+
+Step 12. Remove container
+docker rm myredisnew
+
+
+If it is already stopped, this works directly.
+Step 13. Remove image
+docker rmi YOUR_USERNAME/redis1
+
+
+Step 14. Logout
+docker logout
+
+
+Step 15. Pull your uploaded image
+docker pull YOUR_USERNAME/redis1
+
+
+Step 16. Run container using downloaded image
+docker run --name myredis -d YOUR_USERNAME/redis1
+
+
+Step 17. Enter Redis CLI
+docker exec -it myredis redis-cli
+
+
+Execute:
+SET name "Abcdef"
+GET name
+
+
+Expected output:
+OK
+"Abcdef"
+
+
+Exit:
+exit
+
+
+Step 18. Final cleanup
+docker stop myredis
+docker rm myredis
+docker images
+docker rmi YOUR_USERNAME/redis1
+
+
+Experiment 2 completed
+
+Important commands for your external exam
+These are the commands you should memorize because they are also useful in scenario-based questions.
+Requirement	Command
+List running containers	docker ps
+List all containers	docker ps -a
+Stop container	docker stop name
+Start container	docker start name
+Restart container	docker restart name
+Remove container	docker rm name
+List images	docker images
+Remove image	docker rmi image
+Build image	docker build -t name .
+Run in background	docker run -d image
+Enter container	docker exec -it name bash
+View logs	docker logs name
+Monitor CPU/RAM	docker stats
+Tag image	docker tag source username/image:tag
+Push image	docker push username/image
+Pull image	docker pull image
+Export image	docker save -o image.tar image
+
+Important corrections for your lab
+1. In Experiment 2, use your own Docker Hub username instead of budarajumadhurika.
+2. docker commit requires a container ID or name. Don't copy the sample ID from the record.
+3. Always stop a container before removing it (unless it has already stopped).
+4. Docker Desktop must be running before executing commands.
+One useful additional command from your scenario questions:
+docker run -d -p 8080:5000 --name web_app image_name
+
+
+This maps host port 8080 to container port 5000.
