@@ -1,0 +1,111 @@
+Method 1: If the repository already contains a .war file
+Step 1: Clone the repository
+Open CMD or PowerShell:
+git clone https://github.com/USERNAME/REPOSITORY.git
+
+
+Enter the project folder:
+cd REPOSITORY
+
+
+Check whether the WAR file exists:
+dir /s *.war
+
+
+Suppose the WAR file is:
+target/StudentManagement.war
+
+
+Step 2: Create a Dockerfile
+Inside the project folder, create a file named exactly:
+
+Dockerfile
+
+Put this inside:
+
+FROM tomcat:10.1-jdk17
+
+COPY target/StudentManagement.war /usr/local/tomcat/webapps/ROOT.war
+
+EXPOSE 8080
+
+CMD ["catalina.sh", "run"]
+
+
+
+Important: Replace target/StudentManagement.war with the actual path of your WAR file.
+
+What this does:
+- FROM downloads the Tomcat image.
+- COPY copies your WAR into Tomcat's deployment directory.
+- ROOT.war makes your application accessible directly at /.
+- EXPOSE 8080 documents the container's port.
+- CMD starts Tomcat.
+Step 3: Build the Docker image
+Run this inside the folder containing your Dockerfile:
+docker build -t my-java-web .
+
+
+Step 4: Create and run the container
+docker run -d --name my-tomcat -p 8085:8080 my-java-web
+
+
+Now open:
+
+http://localhost:8085
+
+Your Java web application should be running! 🚀
+
+Method 2: If the repository contains source code but no WAR
+If the project has a pom.xml, build the WAR first using Maven:
+mvn clean package
+
+
+After successful build, check:
+dir target\*.war
+
+
+Then use the Dockerfile from Method 1.
+
+If you don't have Maven installed locally, you can build the WAR using Docker itself:
+docker run --rm -v "%cd%":/app -w /app maven:3.9-eclipse-temurin-17 mvn clean package
+
+
+Then build your Tomcat image:
+docker build -t my-java-web .
+
+
+And run it:
+docker run -d --name my-tomcat -p 8085:8080 my-java-web
+
+
+Useful commands for your exam
+Command	Purpose
+docker images	View created images
+docker ps	View running containers
+docker ps -a	View all containers
+docker logs my-tomcat	Check Tomcat logs
+docker stop my-tomcat	Stop container
+docker start my-tomcat	Start container again
+docker rm -f my-tomcat	Remove container
+docker rmi my-java-web	Remove image
+
+If the application doesn't open
+Check the logs:
+docker logs my-tomcat
+
+
+If you see a message such as Deployment of web application archive ... has finished, Tomcat has deployed the WAR.
+
+If you get a 404, try:
+http://localhost:8085/StudentManagement/
+
+
+This applies when you copied it as StudentManagement.war rather than ROOT.war.
+
+Exam tip: Remember the core sequence:
+docker build -t my-java-web .
+docker run -d --name my-tomcat -p 8085:8080 my-java-web
+
+
+Image creation first, container creation second. The -p 8085:8080 means your laptop's port 8085 forwards to Tomcat's port 8080 inside Docker.
