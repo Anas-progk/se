@@ -1,0 +1,420 @@
+Maven Java Project & Maven Web Project — Complete Lab Steps
+I'll give you the complete procedure for creating both projects in Eclipse/VS Code using Maven, including folder structure, commands, code, build, and execution.
+
+There are two types:
+1. Maven Java Project – a normal Java application that runs using main().
+2. Maven Web Project – a Java web application packaged as a .war file and deployed on Apache Tomcat.
+The important difference:
+Maven Java	Maven Web
+Runs as a Java application	Runs on a web server
+Uses main()	Uses Servlets, JSP, etc.
+Produces .jar	Produces .war
+Run using java	Run using Tomcat
+
+
+Part 1: Create a Maven Java Project
+Step 1: Check whether Java and Maven are installed
+Open CMD or terminal.
+java -version
+
+
+mvn -version
+
+
+If both commands display their versions, you're ready.
+Step 2: Create the Maven project
+Open CMD and navigate to the folder where you want to create the project.
+cd Desktop
+
+
+Run:
+mvn archetype:generate -DgroupId=com.example -DartifactId=MyJavaApp -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+
+
+This creates a project named MyJavaApp.
+- groupId → identifies your organization/package.
+- artifactId → project name.
+- archetype → a project template.
+- interactiveMode=false → creates the project without asking questions.
+Step 3: Understand the folder structure
+Open the MyJavaApp folder in VS Code or Eclipse.
+
+Maven Java project structure
+MyJavaApp/
+│
+├── pom.xml
+│
+└── src/
+    ├── main/
+    │   └── java/
+    │       └── com/
+    │           └── example/
+    │               └── App.java
+    │
+    └── test/
+        └── java/
+            └── com/
+                └── example/
+                    └── AppTest.java
+
+
+Important files:
+- pom.xml – Maven configuration file.
+- src/main/java – your main Java code.
+- src/test/java – your testing code.
+Step 4: Write the Java program
+Open:
+
+src/main/java/com/example/App.java
+
+Replace the code with:
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        System.out.println("Hello Maven Java Project!");
+    }
+}
+
+
+Step 5: Understand the pom.xml
+Open pom.xml.
+
+It may contain something like this:
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>MyJavaApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+</project>
+
+
+If your Java version is 25, you can change 17 to 25. The compiler version must be supported by your installed JDK and Maven compiler plugin.
+Step 6: Compile the project
+Open terminal inside the MyJavaApp folder.
+mvn compile
+
+
+What happens?
+1. Maven reads pom.xml.
+2. Maven downloads required dependencies and plugins if needed.
+3. Maven compiles the Java source files.
+4. Compiled .class files are placed inside target/classes.
+Step 7: Run the Java program
+The simplest way is to use the Maven exec plugin:
+mvn exec:java -Dexec.mainClass="com.example.App"
+
+
+If the exec plugin is not available, add this inside pom.xml under the <project> element:
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.5.0</version>
+        </plugin>
+    </plugins>
+</build>
+
+
+Then run the command again.
+
+Expected output:
+Hello Maven Java Project!
+
+
+Step 8: Build the JAR file
+mvn package
+
+
+The JAR file will be generated inside:
+MyJavaApp/target/MyJavaApp-1.0-SNAPSHOT.jar
+
+
+To clean and rebuild:
+mvn clean package
+
+
+clean deletes the previous target folder, and package creates a fresh JAR.
+
+Part 2: Create a Maven Web Project
+A Maven Web Project is used to create Java web applications that run on Tomcat.
+Step 1: Create the web project
+Open CMD and navigate to your desired folder.
+cd Desktop
+
+
+Run:
+mvn archetype:generate -DgroupId=com.example -DartifactId=MyWebApp -DarchetypeArtifactId=maven-archetype-webapp -DinteractiveMode=false
+
+
+This creates a project named MyWebApp.
+Step 2: Understand the folder structure
+Maven Web project structure
+MyWebApp/
+│
+├── pom.xml
+│
+└── src/
+    └── main/
+        ├── java/
+        │   └── com/
+        │       └── example/
+        │
+        └── webapp/
+            ├── index.jsp
+            └── WEB-INF/
+                └── web.xml
+
+
+Important:
+- src/main/java – Java Servlet classes.
+- src/main/webapp – web pages, JSP, HTML, CSS, JavaScript.
+- WEB-INF/web.xml – web application deployment configuration.
+- pom.xml – Maven configuration.
+Step 3: Configure pom.xml
+Replace the contents of pom.xml with the following:
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>MyWebApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <packaging>war</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>MyWebApp</finalName>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+
+
+
+Important: This configuration uses Jakarta Servlet API, suitable for Tomcat 10.1 or newer.
+
+For Tomcat 9, use the older javax.servlet API instead. Do not mix javax.servlet and jakarta.servlet in the same application.
+Step 4: Create the web page
+Open:
+
+src/main/webapp/index.jsp
+
+Write:
+<html>
+<head>
+    <title>Maven Web Project</title>
+</head>
+<body>
+    <h1>Welcome to Maven Web Project</h1>
+    <p>This is my first Maven web application.</p>
+</body>
+</html>
+
+
+This is the page that will open in the browser.
+Step 5: Create a Servlet
+Inside:
+
+src/main/java/com/example/
+
+Create a file named HelloServlet.java.
+package com.example;
+
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet("/hello")
+public class HelloServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+
+        response.getWriter().println(
+            "<h1>Hello from Maven Servlet!</h1>"
+        );
+    }
+}
+
+
+What does this do?
+1. @WebServlet("/hello") maps the Servlet to the /hello URL.
+2. doGet() runs when the browser sends a GET request.
+3. response.getWriter() sends HTML back to the browser.
+Step 6: Configure web.xml
+Open:
+
+src/main/webapp/WEB-INF/web.xml
+
+You can use this configuration:
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+</web-app>
+
+
+This tells the server to open index.jsp as the welcome page.
+
+The Servlet uses @WebServlet, so you do not need to declare it again in web.xml.
+Step 7: Build the Maven Web Project
+Open terminal inside the MyWebApp folder.
+
+First compile:
+mvn compile
+
+
+Then package:
+mvn package
+
+
+Maven creates:
+MyWebApp/
+└── target/
+    └── MyWebApp.war
+
+
+The .war file contains your web application, including Java classes and web resources.
+Step 8: Deploy the WAR file on Tomcat
+Make sure Apache Tomcat is installed.
+Method 1: Deploy manually
+1. Locate your Tomcat installation.
+2. Open the webapps folder.
+3. Copy MyWebApp.war from your Maven project's target folder.
+4. Paste it into Tomcat's webapps folder.
+5. Start Tomcat.
+For Windows, open CMD inside Tomcat's bin folder:
+startup.bat
+
+
+For Linux:
+./startup.sh
+
+
+Tomcat automatically extracts the WAR file into a folder named MyWebApp.
+Step 9: Open the application in your browser
+Open:
+Maven Web ApplicationExpected output:
+
+
+
+
+
+
+
+
+
+
+Your page should display:
+Welcome to Maven Web Project
+This is my first Maven web application.
+
+
+Now open the Servlet:
+Hello ServletExpected output:
+Hello from Maven Servlet!
+
+
+If your Tomcat uses a different port, replace 8080 with that port.
+
+Part 3: Important Maven commands for viva
+Command	Purpose
+mvn validate	Checks whether the project is valid
+mvn compile	Compiles source code
+mvn test	Runs unit tests
+mvn package	Creates JAR or WAR
+mvn clean	Deletes the target directory
+mvn install	Installs the artifact in local Maven repository
+mvn clean package	Cleans and creates a fresh package
+mvn dependency:tree	Displays project dependencies
+
+Maven lifecycle — remember this order
+validate
+   ↓
+compile
+   ↓
+test
+   ↓
+package
+   ↓
+verify
+   ↓
+install
+   ↓
+deploy
+
+
+When you execute:
+mvn package
+
+
+Maven automatically runs the earlier lifecycle phases, including compilation and tests.
+Final difference to remember for your lab
+Feature	Java Project	Web Project
+Archetype	maven-archetype-quickstart	maven-archetype-webapp
+Main code	src/main/java	src/main/java
+Web files	Not required	src/main/webapp
+Packaging	jar	war
+Execution	main() method	Tomcat
+Output	JAR file	WAR file
+
+Exam tip: If they ask you to create a Maven Java project, use mvn archetype:generate with the quickstart archetype. If they ask for a Maven Web project, use the webapp archetype, configure the WAR packaging, and deploy the generated WAR file on Tomcat.
