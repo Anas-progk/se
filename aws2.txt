@@ -1,0 +1,289 @@
+We're going to prepare this experiment so that 90% of the work is completed on your laptop before the exam. When you enter the lab, your job should mainly be:
+1. Launch an AWS EC2 instance.
+2. Connect to Ubuntu using SSH.
+3. Clone your GitHub repository.
+4. Build and run your Docker image.
+5. Open the application using the public IP.
+I've examined your uploaded AWS Cloud Deployment experiment. We'll follow its exact workflow, including Maven WAR, Tomcat, Docker and EC2.
+Experiment: Cloud Deployment using AWS EC2 + Docker
+Target: 90% laptop preparation
+Phase 1 — Prepare everything on your laptop
+Do this NOW on Windows PowerShell.
+Step 1. Verify installations
+Open PowerShell:
+java -version
+mvn -version
+git --version
+docker --version
+
+
+Make sure:
+- Java is installed.
+- Maven is installed.
+- Git is installed.
+- Docker Desktop is installed and running.
+Check Docker:
+docker run hello-world
+
+
+If successful, Docker is ready.
+Step 2. Create a Maven web application
+If you already have the maven-web-java project from your previous experiments, reuse it.
+
+Otherwise, create one:
+mvn archetype:generate "-DgroupId=com.demo" "-DartifactId=maven-web-java" "-DarchetypeArtifactId=maven-archetype-webapp" "-DinteractiveMode=false"
+
+
+Enter the project:
+cd maven-web-java
+
+
+Step 3. Build the WAR file
+mvn clean package
+
+
+Check whether the WAR exists:
+dir target
+
+
+You should see:
+maven-web-java.war
+
+
+Important milestone
+Your Maven application is now packaged and ready for Tomcat.
+Step 4. Create the Dockerfile
+Inside the project root (same location as pom.xml), execute:
+notepad Dockerfile
+
+
+Paste this EXACTLY:
+
+FROM tomcat:9-jdk11
+
+# Copy WAR file into Tomcat webapps
+COPY target/*.war /usr/local/tomcat/webapps/
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Start Tomcat
+CMD ["catalina.sh", "run"]
+
+
+
+Save the file as Dockerfile, not Dockerfile.txt.
+
+This follows the Dockerfile shown in your experiment's page 4.
+Step 5. Build the Docker image
+Run from the project root:
+docker build -t maven-web-app .
+
+
+Check:
+docker images
+
+
+You should see maven-web-app.
+Step 6. Run the application locally
+docker run -d --name app-demo -p 6060:8080 maven-web-app
+
+
+Check the container:
+docker ps
+
+
+Open your browser:
+Local deployment test
+http://localhost:6060/maven-web-java/If your WAR has a different filename, use that filename (without .war) in the URL.
+
+Your application is now running inside a Docker container on your laptop!
+Step 7. Push the entire project to GitHub
+This is essential because you'll download this project onto EC2 during the exam.
+
+Create a new GitHub repository named:
+maven-web-java
+
+
+Then, from PowerShell:
+git init
+git add .
+git commit -m "AWS Docker deployment"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/maven-web-java.git
+git push -u origin main
+
+
+Replace YOUR_USERNAME with your GitHub username.
+
+Verify that GitHub contains:
+maven-web-java/
+│
+├── src/
+├── target/
+│   └── maven-web-java.war
+├── pom.xml
+└── Dockerfile
+
+
+Important: Your target folder must contain the WAR file. If you don't push target, you can generate it on EC2 using Maven, but that requires Maven and internet access there. We'll prepare for both possibilities.
+Step 8. Save your Docker image as an additional backup
+You can save the already-built image:
+docker save -o maven-web-app.tar maven-web-app
+
+
+This is optional. Your GitHub repository is the primary deployment source.
+
+Phase 2 — What to do during the exam (AWS deployment)
+Only these steps require AWS access
+Step 1. Launch EC2 instance
+Go to AWS Console:
+1. Open Services → EC2.
+2. Click Launch Instance.
+3. Name: ubuntu.
+4. AMI: Ubuntu Server.
+5. Architecture: 64-bit.
+6. Instance type: t2.micro or available lab equivalent.
+7. Create a key pair and download .pem.
+8. Storage: 8 GB.
+9. Launch instance.
+Step 2. Configure Security Group
+This is VERY IMPORTANT.
+
+Add these inbound rules:
+Type	Port	Source
+SSH	22	My IP
+HTTP	80	0.0.0.0/0
+Custom TCP	6060	0.0.0.0/0
+
+Your experiment uses port 6060, so don't forget that third rule.
+Step 3. Connect to Ubuntu
+On the EC2 instance, click Connect → SSH Client.
+
+Open PowerShell and navigate to your .pem file:
+cd "$HOME\Downloads"
+
+
+Use the SSH command provided by AWS. It will look similar to:
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_PUBLIC_IP
+
+
+Replace the filename and IP with the actual values.
+
+You are now inside the Ubuntu machine.
+Step 4. Install required software
+Execute these commands on the Ubuntu terminal:
+sudo apt update
+
+
+sudo apt install docker.io git nano -y
+
+
+Start Docker:
+sudo systemctl start docker
+sudo systemctl enable docker
+
+
+Verify:
+docker --version
+git --version
+
+
+Step 5. Clone your GitHub project
+git clone https://github.com/YOUR_USERNAME/maven-web-java.git
+
+
+Enter the directory:
+cd maven-web-java
+
+
+Check files:
+ls
+
+
+You should see:
+Dockerfile
+pom.xml
+src
+target
+
+
+If target or the WAR is missing, install Maven and build:
+sudo apt install maven -y
+mvn clean package
+
+
+Step 6. Build Docker image
+sudo docker build -t maven-web-app .
+
+
+Check:
+sudo docker images
+
+
+Step 7. Run Docker container
+sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+
+
+Verify:
+sudo docker ps
+
+
+Step 8. Access your application publicly
+Copy the Public IPv4 address from EC2.
+
+Open:
+http://YOUR_EC2_PUBLIC_IP:6060/maven-web-java/
+
+
+Experiment completed
+Your Maven application is now deployed using Docker on an AWS EC2 virtual machine.
+
+Phase 3 — Emergency troubleshooting commands
+Memorize these. They can save your experiment if something goes wrong.
+Problem	Command
+Container not running	sudo docker ps -a
+Check container logs	sudo docker logs app-demo
+Stop container	sudo docker stop app-demo
+Remove container	sudo docker rm app-demo
+Check Docker images	sudo docker images
+Rebuild image	sudo docker build -t maven-web-app .
+Restart Docker	sudo systemctl restart docker
+Check port 6060	sudo ss -tulpn
+
+If you need to run the container again:
+sudo docker rm -f app-demo
+sudo docker run -d --name app-demo -p 6060:8080 maven-web-app
+
+
+Your preparation checklist
+Laptop preparation progress
+0%
+
+
+
+0 of 11 tasks completed
+[ ] Java, Maven, Git and Docker verified
+[ ] Maven web application created
+[ ] mvn clean package successful
+[ ] WAR file generated inside target
+[ ] Dockerfile created
+[ ] Docker image built successfully
+[ ] Docker container running on port 6060
+[ ] Application opens at localhost:6060
+[ ] GitHub repository created
+[ ] Project pushed to GitHub
+[ ] GitHub repository verified
+Reset checklist
+One important thing before the exam
+There are three things you cannot completely prepare on your laptop:
+1. AWS EC2 instance creation.
+2. SSH connection using the exam's key pair.
+3. Public deployment using the exam's EC2 public IP.
+Everything else, including your Maven project, WAR, Dockerfile, Docker image and GitHub repository, can be prepared beforehand.
+
+My recommendation: Don't waste exam time creating the Maven project or debugging Docker. Get your localhost deployment working today, push it to GitHub, and practise the AWS portion once if you have access to an AWS Academy Learner Lab.
+
+One more thing: terminate your EC2 instance after practice if you're using a personal AWS account, to avoid unnecessary charges.
+
+
